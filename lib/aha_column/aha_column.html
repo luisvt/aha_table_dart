@@ -1,0 +1,45 @@
+
+<!--
+/**
+ * @module aha-column
+ *
+ *
+ * child element for aha-table, used for meta building
+ *
+ *    <aha-column 
+ *         name="content"
+ *         type="text"
+ *         sortable="true"
+ *         searchable="true"
+ *         required="true"
+ *         editable="true"
+ *         placeholder="" 
+ *         default="">
+ *    </aha-column>
+ *
+ * @class aha-column
+ * @author Louis Liu<louis.wenchao.liu@gmail.com>
+ *
+ */
+-->
+
+
+<link rel="import" href="packages/polymer/polymer.html">
+
+<polymer-element name="aha-column" attributes="
+name
+label
+type
+sortable
+searchable
+editable
+required
+placeholder
+defaultVal
+choices
+hint
+searchplaceholder">
+  <template>
+  </template>
+  <script type="application/dart" src="aha_column.dart"></script>
+</polymer-element>
