@@ -2,3 +2,6 @@ name: aha_table
 description: A pub package
 dependencies:
   polymer: '>=0.15.0 <0.16.0'
+transformers:
+- polymer:
+    entry_points: examples/index.html

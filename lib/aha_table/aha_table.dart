@@ -1,6 +1,8 @@
 import 'package:polymer/polymer.dart';
 import 'dart:convert';
 import 'package:template_binding/template_binding.dart';
+import 'dart:html';
+import 'package:aha_table/aha_column/aha_column.dart';
 
 @CustomTag('aha-table')
 class AhaTable extends PolymerElement {
@@ -50,7 +52,7 @@ class AhaTable extends PolymerElement {
     // text displayed as title of editable cell.
     @published String edittitle = "";
     //sortedColumn: sorted column name
-    @published String sortedColumn = "";
+    @published String sortedColumn;
     //editingRow: current editing row
     //@type {Object}
     @published Map editingRow = null;
@@ -97,50 +99,42 @@ class AhaTable extends PolymerElement {
             itemoftext;
 
     ready() {
-//      var children = this.children || this.impl.children;
-//      if (children.length) {
-//        this.meta = children.array();
-//      }
-//      if (this.dataset.sizelist) {
-//        this.sizelist = JSON.parse(this.dataset.sizelist);
-//      }
       //Show element when it's ready.
-      $['aha_table_main'].setAttribute('resolved', '');
-      $['aha_table_main'].removeAttribute('unresolved');
+      $['aha_table_main'].attributes.remove('unresolved');
 
-      this.currentpage = 1;
+      currentpage = 1;
     }
 
      //=========
     //internal methods
     dataChanged() {
-      if (this.meta.length == 0)  {
-        $['aha_table_main'].setAttribute('unresolved', '');
-        // generate meta from data if meta is not provided from aha-column.
-        this.meta = [];
-        for (var prop in this.data[0]) {
-          if (prop.indexOf('_') != 0) {//skip internal field
-            this.meta.add({
-              'name': prop,
-              'label': prop.charAt(0).toUpperCase() + prop.slice(1), 
-              'type': [true, false].indexOf(this.data[0][prop]) > -1 ? "boolean" : "string", 
-              'sortable': true, 
-              'searchable': true, 
-              'editable': true, 
-              'required': false
-            });
-          }
-        }
-        $['aha_table_main'].setAttribute('resolved', '');
-        $['aha_table_main'].removeAttribute('unresolved');
-      }
-      this.refreshPagination(true);
+//      if (meta.length == 0)  {
+//        $['aha_table_main'].setAttribute('unresolved', '');
+//        // generate meta from data if meta is not provided from aha-column.
+//        meta = [];
+//        for (var prop in data[0]) {
+//          if (prop.indexOf('_') != 0) {//skip internal field
+//            meta.add({
+//              'name': prop,
+//              'label': prop.charAt(0).toUpperCase() + prop.slice(1), 
+//              'type': [true, false].indexOf(data[0][prop]) > -1 ? "boolean" : "string", 
+//              'sortable': true, 
+//              'searchable': true, 
+//              'editable': true, 
+//              'required': false
+//            });
+//          }
+//        }
+//        $['aha_table_main'].setAttribute('resolved', '');
+//        $['aha_table_main'].removeAttribute('unresolved');
+//      }
+      refreshPagination(true);
     }
 
     modifiedChanged() {}
 
     //translate value to labels for select
-    _translate(value, options, blank){
+    translate2(value, options, blank){
       if (value != "" && options) {
         for (var i = options.length - 1; i >= 0; i--) {
           if (options[i].value == value) {
@@ -153,18 +147,19 @@ class AhaTable extends PolymerElement {
     }
 
     capitalize(value) {
-      if (value is! String || value.length == 0) 
-        return value;
-      return value.charAt(0).toUpperCase() + value.slice(1);
+//      if (value is! String || value.length == 0) 
+//        return value;
+//      return value.charAt(0).toUpperCase() + value.slice(1);
+      return value;
     }
 
     edited(e) {
       var row = nodeBind(e.target).templateInstance.model['row'];
-      row._editing = true;
-      if (this.editingRow != null && this.editingRow != row) {
-        this.editingRow['_editing'] = false;
+      row['_editing'] = true;
+      if (editingRow != null && editingRow != row) {
+        editingRow['_editing'] = false;
       }
-      this.editingRow = row;
+      editingRow = row;
     }
 
     save(e) {
@@ -176,170 +171,140 @@ class AhaTable extends PolymerElement {
         } else {
           row[column.name] = e.target.value;
         }
-        if (this.modified.indexOf(row) == -1) {
-          row._modified = true;
-          this.modified.add(row);
+        if (modified.indexOf(row) == -1) {
+          row['_modified'] = true;
+          modified.add(row);
         }
 
         if (!e.relatedTarget 
           || !e.relatedTarget.templateInstance
           || e.relatedTarget.templateInstance.model.row != nodeBind(e.target).templateInstance.model['row']) {
-          row._editing = false;
+          row['_editing'] = false;
         }
 
         if (column.required && !e.target.validity.valid) {
-          this.fire('after-invalid', detail: {"event": e, "row" : row, "column" : column});
+          fire('after-invalid', detail: {"event": e, "row" : row, "column" : column});
         }
       }
     }
 
-    sort(e, p) {
-      var column = nodeBind(e.target).templateInstance.model['column'];
-      if(column && column.sortable){
+    handleSort(Event e) {
+      AhaColumn column = nodeBind(e.target).templateInstance.model['column'];
+      if(column != null && column.sortable){
         var sortingColumn = column.name;
-        if (sortingColumn == this.sortedColumn){
-          this.descending = !this.descending;
+        if (sortingColumn == sortedColumn){
+          descending = !descending;
         } else {
-          this.sortedColumn = sortingColumn;
+          sortedColumn = sortingColumn;
         }
       }
 
-      this.refreshPagination();
+      refreshPagination();
+    }
+    
+    @observable ObservableMap<String, dynamic> searchMap = toObservable({});
+    
+    List _filteredRows;
+
+    search(event, details, target) {
+      AhaColumn column = nodeBind(target).templateInstance.model['column'];
+      
+      searchMap[column.name] = "CHECKBOX" == target.type.toUpperCase() ? target.checked : target.value;
+      
+      refreshPagination();
     }
 
-    search(e, p) {
-      if(nodeBind(e.target).templateInstance.model['column']){
-        var searchedColumn = nodeBind(e.target).templateInstance.model['column'].name;
-        this.data.forEach((row){
-          var matched = false;
-          row._not_matched_columns = row._not_matched_columns != null ? row._not_matched_columns : [];
-
-          //checkbox will only filter checked rows.
-          if ("CHECKBOX" == e.target.type.toUpperCase()) {
-            matched = !e.target.checked || row[searchedColumn];
-          } else if (
-            // empty search means it always match
-            e.target.value == "" 
-            || 
-            // non-empty search and the content matches.
-            row[searchedColumn] 
-            && row[searchedColumn].toString().indexOf(e.target.value.toString().toLowerCase()) > -1) {
-            matched = true;
-          }
-
-          if (matched) {
-            if (row._not_matched_columns.indexOf(searchedColumn) > -1) {
-              // then we remove matched column from _not_matched_columns list.
-              row._not_matched_columns.splice(row._not_matched_columns.indexOf(searchedColumn), 1);
-            }
-            // update _filtered state
-            // true if there's other not-matched_column
-            // false if all column matches.
-            row._filtered = row._not_matched_columns.length > 0;
-          } else {
-            // Not matched!
-            row._filtered = true;
-            if (row._not_matched_columns.indexOf(searchedColumn) == -1) {
-              row._not_matched_columns.add(searchedColumn);
-            }
-          }
-        });
-
-        this.filtered = this.data.any((row){return row._filtered;});
-
-        this.refreshPagination();
-      }
-    }
-
-     //============
+    //============
     //pagination
     firstPage() {
-      this.currentpage = 1;
+      currentpage = 1;
     }
 
     prevPage() {
-      if ( this.currentpage > 1 ) {
-        this.currentpage--;
+      if ( currentpage > 1 ) {
+        currentpage--;
       }
     }
 
     nextPage() {
-      if ( this.currentpage < this.pageCount ) {
-        this.currentpage++;
+      if ( currentpage < pageCount ) {
+        currentpage++;
       }
     }
 
     lastPage() {
-      this.currentpage = this.pageCount;
+      currentpage = pageCount;
     }
 
     currentpageChanged(){
-//      this.currentpage = this.currentpage != null ? int.parse(this.currentpage) : 0;
-      this.currentpage = this.currentpage < 1 ? 1 : this.currentpage;
-      this.currentpage = this.pageCount > 0 && this.currentpage > this.pageCount ? this.pageCount : this.currentpage;
-      this.filterPage();
-      this.firstItemIndex = (this.currentpage-1) * this.pagesize+1;
-      if (this.currentpage == this.pageCount) {
-        this.lastItemIndex = this.itemCount;
+//      currentpage = currentpage != null ? int.parse(currentpage) : 0;
+      currentpage = currentpage < 1 ? 1 : currentpage;
+      currentpage = pageCount > 0 && currentpage > pageCount ? pageCount : currentpage;
+      filterPage();
+      firstItemIndex = (currentpage-1) * pagesize+1;
+      if (currentpage == pageCount) {
+        lastItemIndex = itemCount;
       } else {
-        this.lastItemIndex = (this.currentpage)* this.pagesize;
+        lastItemIndex = (currentpage)* pagesize;
       }
     }
 
     pagesizeChanged(){
-//      this.pagesize = parseInt(this.pagesize);
-      this.refreshPagination();
+//      pagesize = parseInt(pagesize);
+      refreshPagination();
     }
 
     // call this when total count is no changed.
     filterPage() {
-      var from = (this.currentpage-1) * this.pagesize;
-      var to   = from + this.pagesize;
-      var filteredRows = this.filtered 
-          ? this.data.where((r){return !r['_filtered'];})
-          : this.data;
-      if (this.sortedColumn != null) {
-        // sorting map: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort#Sorting_maps
-        var i = 0;
-        filteredRows = 
-        filteredRows
-        .map((e){
-          var v = e[this.sortedColumn];
-          return {
-            'index': i++, 
-            'value': v is String ? v.toLowerCase() : v
-          };
-        })
-        .sort((a, b) {
-          return this.descending 
-          ? (a.value < b.value ? 1 : -1)
-          : (a.value > b.value ? 1 : -1);
-        })
-        .map((e){
-          return filteredRows[e.index];
+      var from = (currentpage-1) * pagesize;
+      var to   = from + pagesize;
+      
+//      List filteredRows = _filteredRows != null ? _filteredRows.toList() : data;
+
+      _filteredRows = data.where((row) {
+        bool result = true;
+        searchMap.forEach((searchedCol, searchVal) {
+          if(row[searchedCol] is bool)
+            result = result && row[searchedCol] == searchVal;
+          else
+            result = result && row[searchedCol].toString().toLowerCase()
+              .contains(searchVal.toString().toLowerCase());
         });
+        return result;
+      }).toList();
+
+      if (sortedColumn != null) {
+        _filteredRows.sort((rowA, rowB) =>
+            descending 
+              ? rowA[sortedColumn].compareTo(rowB[sortedColumn])
+              : rowB[sortedColumn].compareTo(rowA[sortedColumn]));
       }
-      this.viewingRows = filteredRows.getRange(from, to);
+      
+      if(_filteredRows.length > from && _filteredRows.length > to)
+        viewingRows = _filteredRows.getRange(from, to);
+      else
+        viewingRows = _filteredRows;
     }
 
-    // call this when total count is change.
+    // call when total count is change.
     refreshPagination([keepInTheCurentPage = false]) {
       if (!keepInTheCurentPage) {
         // Usually go to the first page is the best way to avoid chaos.
-        this.currentpage = 1;
+        currentpage = 1;
       }
       // Cache the total page count and item count
       var count = 0;
-      this.data.forEach((row) {
-        if (!row._filtered) {
+      //TODO: change this
+      data.forEach((row) {
+        if (row['_filtered'] == false) {
           count++;
         }
       });
-      this.itemCount = count;
-      this.pageCount = ( count / this.pagesize ).ceil();
+      itemCount = _filteredRows.length;
+      pageCount = ( count / pagesize ).ceil();
 
       // Update model bound to UI with filtered range
-      this.filterPage();
+      filterPage();
     }
 
     //data manipulation//
@@ -348,34 +313,34 @@ class AhaTable extends PolymerElement {
       var row = nodeBind(e.target).templateInstance.model['row'];
       var detail = {"row" : row, "column" : column};
       if (column.editable) {
-        this.edited(e);
+        edited(e);
       }
-      this.fire('after-td-click', detail: detail);
+      fire('after-td-click', detail: detail);
     }
 
     dbclick(e,p) {
       var column = nodeBind(e.target).templateInstance.model['column'];
       var row = nodeBind(e.target).templateInstance.model['row'];
       var detail = {"row" : row, "column" : column};
-      this.fire('after-td-dbclick', detail: detail);
+      fire('after-td-dbclick', detail: detail);
     }
 
     select(e,p){
-      if (this.selectable) {
+      if (selectable) {
         var row = nodeBind(e.target).templateInstance.model['row'];
-        var index = this.selected.indexOf(row);
+        var index = selected.indexOf(row);
         if (index > -1) {
-          if(row._selected){
-            this.selected.removeAt(index);
-            row._selected = false;
+          if(row['_selected']){
+            selected.removeAt(index);
+            row['_selected'] = false;
           }
         } else {
-          if(!row._selected){
-            this.selected.add(row);
-            row._selected = true;
+          if(!row['_selected']){
+            selected.add(row);
+            row['_selected'] = true;
           }
         }
-        if (!row._editing) {
+        if (!row['_editing']) {
           e.preventDefault();
         }
       }
@@ -383,36 +348,36 @@ class AhaTable extends PolymerElement {
 
     selectall(e,p){
       if(e.target.checked){
-        this.viewingRows.forEach((row){
-          if(this.selected.indexOf(row)==-1) {
-            this.selected.add(row);
+        viewingRows.forEach((row){
+          if(selected.indexOf(row)==-1) {
+            selected.add(row);
           }
-          row._selected = true;
+          row['_selected'] = true;
         });
       }else{
-        this.data.forEach((row) {
-          row._selected = false;
+        data.forEach((row) {
+          row['_selected'] = false;
         });
       }
     }
 
     create(obj) {
-      this.fire('before-create', detail: obj);
+      fire('before-create', detail: obj);
       var _default = {'_editing': true, '_modified': true};
       var _new = obj != null ? obj : _default;
-      this.meta.forEach((column) {
+      meta.forEach((column) {
         if (column.defaultVal && _new[column.name] == null) {
           _new[column.name] = column.defaultVal;
         }
       });
-      this.data.insert(0,_new);
-      this.modified.add(_new);
-      this.fire('after-create', detail: _new);
+      data.insert(0,_new);
+      modified.add(_new);
+      fire('after-create', detail: _new);
     }
 
     copy(e, detail, sender) {
       var obj = nodeBind(e.target).templateInstance.model['row'];
-      this.fire('before-copy', detail: obj);
+      fire('before-copy', detail: obj);
       var _new = JSON.decode(JSON.encode(obj));
       if (_new.id) {
         _new.id = null;
@@ -422,29 +387,31 @@ class AhaTable extends PolymerElement {
       }
       _new._modified = true;
       _new._editing = false;
-      this.data.insert(0,_new);
-      this.modified.add(_new);
-      this.fire('after-copy', detail: _new);
+      data.insert(0,_new);
+      modified.add(_new);
+      fire('after-copy', detail: _new);
     }
 
     removed(e, detail, sender) {
       var obj = nodeBind(e.target).templateInstance.model['row'];
-      this.fire('before-remove', detail:  obj);
-      var found_index = this.data.indexOf(obj);
+      fire('before-remove', detail:  obj);
+      var found_index = data.indexOf(obj);
       if (found_index != -1) {
-        this.data.removeAt(found_index);
-        this.deleted.add(obj);
+        data.removeAt(found_index);
+        deleted.add(obj);
       }
-      var found_index_in_modified = this.modified.indexOf(obj);
+      var found_index_in_modified = modified.indexOf(obj);
       if (found_index_in_modified != -1) {
         obj._modified = false;
-        this.modified.removeAt(found_index_in_modified);
+        modified.removeAt(found_index_in_modified);
       }
-      this.fire('after-remove', detail: obj);
+      fire('after-remove', detail: obj);
     }
 
     toggleFilters() {
-      this.searchable = !this.searchable;
+      searchable = !searchable;
+      searchMap.clear();
+      filterPage();
     }
 
 }

@@ -1,0 +1,14 @@
+<link rel="import" href="packages/polymer/polymer.html">
+<link rel="import" href="packages/aha_table/aha_table/aha_table.html">
+<link rel="import" href="packages/aha_table/aha_column/aha_column.html">
+
+<polymer-element name="aha-table-demo">
+  <template>
+    <aha-table data="{{tableData}}">
+      <aha-column name="first" searchable type="boolean"></aha-column>
+      <aha-column name="second" searchable type="choice" options="{{secondOptions}}" sortable></aha-column>
+      <aha-column name="third" searchable type="text" searchplaceholder="some placeholder" sortable></aha-column>
+    </aha-table>
+  </template>
+  <script type="application/dart" src="aha_table_demo.dart"></script>
+</polymer-element>

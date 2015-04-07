@@ -50,7 +50,7 @@
  */
 -->
 
-<link rel="import" href="packages/polymer/polymer.html">
+<link rel="import" href="../../../packages/polymer/polymer.html">
 
 <polymer-element name="aha-table" attributes="
 selectable 
@@ -83,12 +83,24 @@ itemoftext
       :host { 
         display: block;
       }
+      
+      #aha_table_main {
+        border: black solid thin;
+      }
+      
+      #aha_table_main td, #aha_table_main th {
+        border: black solid thin;
+      }
+      
       .rows:hover, 
       .selected {
         background-color: #f3f3f3;
       }
       .column-head {
         white-space: nowrap;
+      }
+      .sorting {
+        display: inline-block;
       }
       .sortable .column-head,
       .filterrow {
@@ -178,42 +190,45 @@ itemoftext
           <th template 
             repeat="{{ column in children }}"
             title="{{ columntitle }}"
-            class="{{ column.attributes['sortable'] ? 'sortable' : ''}} aha-{{column.attributes['name']}}-th">
+            class="{{ column.sortable ? 'sortable' : ''}} aha-{{column.name}}-th">
             <span class="
-              {{ sortedColumn == column.attributes['name'] ? 'sorting ' : 'hide'}}
-              {{ descending ? 'arrow-down' : 'arrow-up'}}">
+               {{ sortedColumn == column.name ? 'sorting ' : 'hide'}} 
+               {{ descending ? 'arrow-down' : 'arrow-up'}}"> 
             </span>
             <span 
               class="column-head" 
               title="{{sorttitle}}"
-              on-click="{{ sort }}">{{ column.attributes['label'] ? column.attributes['label'] : column.attributes['name'] | capitalize }}</span>
+              on-click="{{ handleSort }}">{{ column.label != null ? column.label : column.name | capitalize }}</span>
             <span 
-              class="{{ column.attributes['hint'] ? 'hint' : 'hide' }}" 
-              title="{{ column.attributes['hint'] }}"></span>
+              class="{{ column.hint != null ? 'hint' : 'hide' }}" 
+              title="{{ column.hint }}"></span>
           </th>
         </tr>
-        <tr class="search-head {{ searchable ? '' : 'hide'}}">
+        <tr hidden?="{{ !searchable }}">
           <th></th>
-          <th template
-            repeat="{{ column in meta }}">
-            <div class="{{ column.attributes['searchable'] ? 'searchable' : 'hide'}}">
-              <select 
-                on-change="{{ search }}" 
-                class="{{ 'choice' == column.attributes['type'] ? '' : 'hide' }}">
-                  <option template 
-                    repeat="{{ option in column.attributes['options'] }}"
-                    value="{{ option.value }}">
-                    {{ option.label }}
-                  </option>
-              </select>
-              <input type="checkbox" 
-                on-change="{{ search }}" 
-                class="{{ 'boolean' == column.attributes['type'] ? '' : 'hide' }}"/>
-              <input type="text" 
-                on-keyup="{{ search }}" 
-                placeholder?="{{ column.attributes['searchplaceholder'] }}" 
-                class="{{ 'choice' != column.attributes['type'] && 'boolean' != column.attributes['type'] ? '' : 'hide' }}"/>
-            </div>
+          <th template repeat="{{ column in children }}" class="searchable">
+              <template if="{{ 'choice' == column.type }}">
+                <select on-change="{{ search }}" >
+                    <option selected="{{searchMap[column.name] == null ? 'selected' : '' }}"></option>
+                    <option template 
+                      repeat="{{ option in column.options }}"
+                      value="{{ option['value'] }}">
+                      {{ option['label'] }}
+                    </option>
+                </select>
+              </template>
+              <template if="{{ 'boolean' == column.type }}">
+                <input 
+                  type="checkbox" 
+                  on-change="{{ search }}" 
+                  checked="{{searchMap[column.name] != null ? 'checked' : '' }}"/>
+              </template>
+              <template if="{{ 'choice' != column.type && 'boolean' != column.type }}">
+                <input type="text" 
+                  on-keyup="{{ search }}" 
+                  placeholder="{{ column.searchplaceholder }}" 
+                  value="{{searchMap[column.name]}}"/>
+              </template>
           </th>
         </tr>
       </thead>
@@ -221,16 +236,16 @@ itemoftext
         <tr template
           repeat="{{ row in viewingRows }}"
           class="rows
-            {{ row._modified ? 'modified' : '' }}
-            {{ row._editing  ? 'editing'  : '' }}
-            {{ row._selected ? 'selected'  : '' }}
-          ">
+             {{ row['_modified'] ? 'modified' : '' }}
+             {{ row['_editing']  ? 'editing'  : '' }}
+             {{ row['_selected'] ? 'selected'  : '' }}
+           ">
           <td>
             <input type="checkbox" 
               title="{{ selecttitle }}"
               class="{{ selectable ? '' : 'hide'}}" 
               on-change="{{ select }}" 
-              checked?="{{ row._selected }}"/>
+              checked?="{{ row['_selected'] }}"/>
             <a class="copy-er {{ copyable ? '' : 'hide' }}" 
               on-click="{{copy}}" 
               title="{{ copytitle }}">
@@ -242,102 +257,103 @@ itemoftext
               <i></i>
             </a>
           </td>
-          <td template 
-            repeat="{{ column in meta }}" 
+          <td template
+            repeat="{{ column in children }}" 
             on-dblclick="{{ dbclick }}" 
             on-click="{{ click }}" 
             title="{{ column.attributes['editable'] ? edittitle: '' }}" 
             class="aha-td aha-{{column.attributes['name']}}-td">
-            <div class="{{ column.attributes['editable'] && row._editing ? '' : 'hide'}}">
-              <select 
-                required?="{{ column.attributes['required'] }}"
-                class="{{ 'choice' == column.attributes['type'] ? '' : 'hide'}}"
-                on-change="{{ save }}" 
-                on-blur="{{ save }}">
-                <option template
-                  repeat="{{ option in column.attributes['options'] }}"
-                  value="{{ option.value }}" 
-                  selected?="{{ row[column.attributes['name']] == option.value }}">
-                  {{ option.label }}
-                </option>
-              </select>
-              <input type="text" 
-                required?="{{ column.attributes['required'] }}"
-                class="{{ 'string' == column.attributes['type'] ? '' : 'hide'}}"
-                on-blur="{{ save }}" 
-                value="{{ row[column.attributes['name']] }}"/>
-              <input type="date" 
-                required?="{{ column.attributes['required'] }}"
-                class="{{ 'date' == column.attributes['type'] ? '' : 'hide'}}"
-                on-blur="{{ save }}" 
-                value="{{ row[column.attributes['name']] }}"/>
-              <input type="time" 
-                required?="{{ column.attributes['required'] }}"
-                class="{{ 'time' == column.attributes['type'] ? '' : 'hide'}}"
-                on-blur="{{ save }}" 
-                value="{{ row[column.attributes['name']] }}"/>
-              <input type="datetime" 
-                required?="{{ column.attributes['required'] }}"
-                class="{{ 'datetime' == column.attributes['type'] ? '' : 'hide'}}"
-                on-blur="{{ save }}" 
-                value="{{ row[column.attributes['name']] }}"/>
-              <textarea
-                required?="{{ column.attributes['required'] }}"
-                class="{{ 'text' == column.attributes['type'] ? '' : 'hide'}}"
-                on-mouseover="{{ focus }}"
-                on-blur="{{ save }}">{{ row[column.attributes['name']] }}</textarea>
-              <input type="checkbox"
-                class="{{ 'boolean' == column.attributes['type'] ? '' : 'hide'}}"
-                on-change="{{ save }}" 
-                checked?="{{ row[column.attributes['name']] }}" />
+<!--             <div class="{{ column.attributes['editable'] && row._editing ? '' : 'hide'}}"> -->
+<!--               <select  -->
+<!--                 required?="{{ column.attributes['required'] }}" -->
+<!--                 class="{{ 'choice' == column.attributes['type'] ? '' : 'hide'}}" -->
+<!--                 on-change="{{ save }}"  -->
+<!--                 on-blur="{{ save }}"> -->
+<!--                 <option template -->
+<!--                   repeat="{{ option in column.attributes['options'] }}" -->
+<!--                   value="{{ option.value }}"  -->
+<!--                   selected?="{{ row[column.attributes['name']] == option.value }}"> -->
+<!--                   {{ option.label }} -->
+<!--                 </option> -->
+<!--               </select> -->
+<!--               <input type="text"  -->
+<!--                 required?="{{ column.attributes['required'] }}" -->
+<!--                 class="{{ 'string' == column.attributes['type'] ? '' : 'hide'}}" -->
+<!--                 on-blur="{{ save }}"  -->
+<!--                 value="{{ row[column.attributes['name']] }}"/> -->
+<!--               <input type="date"  -->
+<!--                 required?="{{ column.attributes['required'] }}" -->
+<!--                 class="{{ 'date' == column.attributes['type'] ? '' : 'hide'}}" -->
+<!--                 on-blur="{{ save }}"  -->
+<!--                 value="{{ row[column.attributes['name']] }}"/> -->
+<!--               <input type="time"  -->
+<!--                 required?="{{ column.attributes['required'] }}" -->
+<!--                 class="{{ 'time' == column.attributes['type'] ? '' : 'hide'}}" -->
+<!--                 on-blur="{{ save }}"  -->
+<!--                 value="{{ row[column.attributes['name']] }}"/> -->
+<!--               <input type="datetime"  -->
+<!--                 required?="{{ column.attributes['required'] }}" -->
+<!--                 class="{{ 'datetime' == column.attributes['type'] ? '' : 'hide'}}" -->
+<!--                 on-blur="{{ save }}"  -->
+<!--                 value="{{ row[column.attributes['name']] }}"/> -->
+<!--               <textarea -->
+<!--                 required?="{{ column.attributes['required'] }}" -->
+<!--                 class="{{ 'text' == column.attributes['type'] ? '' : 'hide'}}" -->
+<!--                 on-mouseover="{{ focus }}" -->
+<!--                 on-blur="{{ save }}">{{ row[column.attributes['name']] }}</textarea> -->
+<!--               <input type="checkbox" -->
+<!--                 class="{{ 'boolean' == column.attributes['type'] ? '' : 'hide'}}" -->
+<!--                 on-change="{{ save }}"  -->
+<!--                 checked?="{{ row[column.attributes['name']] }}" /> -->
+<!--             </div> -->
+            <div class="{{ column.editable && row['_editing'] ? 'hide' : ''}} {{ row[column.name] == null ? 'empty' : ''}}">
+<!--               {{ translate2(row[column.name], column.options, column.placeholder) }} -->
+              {{ row[column.name] }}
             </div>
-            <div class="{{ column.attributes['editable'] && row._editing ? 'hide' : ''}} {{ row[column.attributes['name']] == null || row[column.attributes['name']] == undefined ? 'empty' : ''}}">{{ 
-              row[column.attributes['name']] | _translate(column.attributes['options'], column.attributes['placeholder']) 
-            }}</div>
           </td>
         </tr>
       </tbody>
-      <tfoot>
-        <tr>
-          <td colspan="{{meta.length+1}}">
-            <div class="pagination">
-            <span class="paging">
-              <button
-                title="{{firsttitle}}"
-                class='first {{currentpage == 1 ? "disabled" : "available"}} '
-                on-click="{{firstPage}}">{{first}}</button>
-              <button
-                title="{{previoustitle}}"
-                class='previous {{currentpage == 1 ? "disabled" : "available"}}'
-                on-click="{{prevPage}}">{{previous}}</button>
-              <span class="pager">
-                {{pagetext || ''}}
-                <input type="text" value="{{currentpage}}"/>
-                {{pageoftext || '/'}}
-                {{pageCount}}
-              </span>
-              <button
-                title="{{nexttitle}}"
-                class='next {{pageCount <= 0 || currentpage == pageCount? "disabled" : "available"}}'
-                on-click="{{nextPage}}">{{next}}</button>
-              <button
-                title="{{lasttitle}}"
-                class='last {{pageCount <= 0 || currentpage == pageCount? "disabled" : "available"}}'
-                on-click="{{lastPage}}">{{last}}</button>
-            </span>
-            <span class="pagesize">
-              {{ pagesizetext || '' }}
-              <select value="{{pagesize}}">
-                <option template repeat="{{n in sizelist}}" selected?="{{ n == pagesize }}">{{n}}</option>
-              </select>
-            </span>
-            <span class="summary">
-              {{ summarytext || ''}} {{ firstItemIndex }} - {{ lastItemIndex }} {{ itemoftext || '/'}} {{ itemCount }}
-            </span>
-            </div>
-          </td>
-        </tr>
-      </tfoot>
+<!--       <tfoot> -->
+<!--         <tr> -->
+<!--           <td colspan="{{meta.length+1}}"> -->
+<!--             <div class="pagination"> -->
+<!--             <span class="paging"> -->
+<!--               <button -->
+<!--                 title="{{firsttitle}}" -->
+<!--                 class='first {{currentpage == 1 ? "disabled" : "available"}} ' -->
+<!--                 on-click="{{firstPage}}">{{first}}</button> -->
+<!--               <button -->
+<!--                 title="{{previoustitle}}" -->
+<!--                 class='previous {{currentpage == 1 ? "disabled" : "available"}}' -->
+<!--                 on-click="{{prevPage}}">{{previous}}</button> -->
+<!--               <span class="pager"> -->
+<!--                 {{pagetext != null ? pagetext ''}} -->
+<!--                 <input type="text" value="{{currentpage}}"/> -->
+<!--                 {{pageoftext || '/'}} -->
+<!--                 {{pageCount}} -->
+<!--               </span> -->
+<!--               <button -->
+<!--                 title="{{nexttitle}}" -->
+<!--                 class='next {{pageCount <= 0 || currentpage == pageCount? "disabled" : "available"}}' -->
+<!--                 on-click="{{nextPage}}">{{next}}</button> -->
+<!--               <button -->
+<!--                 title="{{lasttitle}}" -->
+<!--                 class='last {{pageCount <= 0 || currentpage == pageCount? "disabled" : "available"}}' -->
+<!--                 on-click="{{lastPage}}">{{last}}</button> -->
+<!--             </span> -->
+<!--             <span class="pagesize"> -->
+<!--               {{ pagesizetext || '' }} -->
+<!--               <select value="{{pagesize}}"> -->
+<!--                 <option template repeat="{{n in sizelist}}" selected?="{{ n == pagesize }}">{{n}}</option> -->
+<!--               </select> -->
+<!--             </span> -->
+<!--             <span class="summary"> -->
+<!--               {{ summarytext || ''}} {{ firstItemIndex }} - {{ lastItemIndex }} {{ itemoftext || '/'}} {{ itemCount }} -->
+<!--             </span> -->
+<!--             </div> -->
+<!--           </td> -->
+<!--         </tr> -->
+<!--       </tfoot> -->
     </table>
   </template>
   <script type="application/dart" src="aha_table.dart"></script>

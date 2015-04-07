@@ -14,3 +14,5 @@ packages/
 pubspec.lock
 /.settings/**
 /.project
+/.pub/**
+/.pub
