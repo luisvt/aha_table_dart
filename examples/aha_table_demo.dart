@@ -9,7 +9,13 @@ class AhaTableDemo extends PolymerElement{
   @observable var tableData = toObservable([
     {'first': true, 'second': 'opt1', 'third': 'one'},
     {'first': false, 'second': 'opt2', 'third': 'two'},
-    {'first': true, 'second': 'opt1', 'third': 'three'}
+    {'first': true, 'second': 'opt1', 'third': 'three'},
+    {'first': true, 'second': 'opt1', 'third': 'four'},
+    {'first': false, 'second': 'opt2', 'third': 'five'},
+    {'first': true, 'second': 'opt1', 'third': 'six'},
+    {'first': true, 'second': 'opt1', 'third': 'seven'},
+    {'first': false, 'second': 'opt2', 'third': 'eight'},
+    {'first': true, 'second': 'opt1', 'third': 'nine'}
   ]);
   
 }

@@ -4,8 +4,8 @@
 
 <polymer-element name="aha-table-demo">
   <template>
-    <aha-table data="{{tableData}}">
-      <aha-column name="first" searchable type="boolean"></aha-column>
+    <aha-table data="{{tableData}}" selectable>
+      <aha-column name="first" editable searchable type="boolean"></aha-column>
       <aha-column name="second" searchable type="choice" options="{{secondOptions}}" sortable></aha-column>
       <aha-column name="third" searchable type="text" searchplaceholder="some placeholder" sortable></aha-column>
     </aha-table>

@@ -3,6 +3,18 @@ import 'dart:convert';
 import 'package:template_binding/template_binding.dart';
 import 'dart:html';
 import 'package:aha_table/aha_column/aha_column.dart';
+import 'package:polymer_expressions/filter.dart';
+
+class StringToInt extends Transformer<String, int> {
+  String forward(int i) => i.toString();
+  int reverse(String s) {
+    try {
+      return int.parse(s);
+    } catch (e) {
+      return null;
+    }
+  }
+}
 
 @CustomTag('aha-table')
 class AhaTable extends PolymerElement {
@@ -24,9 +36,7 @@ class AhaTable extends PolymerElement {
     //deleted: all deleted row will be moved here.
     @published List deleted = [];
     //selected: all selected row will be referenced here.
-    @published List selected = [];
-    //all visiable rows are reference here.
-    @published List viewingRow = []; 
+    @published ObservableList selectedRows = toObservable([]);
     //selectable: if table row is selectable
     @published bool selectable = false;
     //copyable: if table row is copyable
@@ -59,7 +69,7 @@ class AhaTable extends PolymerElement {
     //if filtering has been performed.
     @published bool filtered = false;
     //editingRow: current rows in display/view
-    @published List viewingRows = [];
+    @published Iterable viewingRows = [];
     //descending: current sorting order
     @published bool descending = false;
     //pagesize: the number of items to show per page
@@ -97,6 +107,8 @@ class AhaTable extends PolymerElement {
             pagesizetext, 
             summarytext, 
             itemoftext;
+    
+    final asInt = new StringToInt();
 
     ready() {
       //Show element when it's ready.
@@ -163,9 +175,9 @@ class AhaTable extends PolymerElement {
     }
 
     save(e) {
-      var row    = nodeBind(e.target).templateInstance.model['row'];
+      ObservableMap row    = nodeBind(e.target).templateInstance.model['row'];
       var column = nodeBind(e.target).templateInstance.model['column'];
-      if(row){
+      if(row != null){
         if ("CHECKBOX" == e.target.type.toUpperCase()) {
           row[column.name] = e.target.checked;
         } else {
@@ -176,13 +188,14 @@ class AhaTable extends PolymerElement {
           modified.add(row);
         }
 
-        if (!e.relatedTarget 
-          || !e.relatedTarget.templateInstance
-          || e.relatedTarget.templateInstance.model.row != nodeBind(e.target).templateInstance.model['row']) {
+        //TODO: check correctly
+//        if (!e.relatedTarget 
+//          || !e.relatedTarget.templateInstance
+//          || e.relatedTarget.templateInstance.model.row != nodeBind(e.target).templateInstance.model['row']) {
           row['_editing'] = false;
-        }
+//        }
 
-        if (column.required && !e.target.validity.valid) {
+        if (column.required != null && !e.target.validity.valid) {
           fire('after-invalid', detail: {"event": e, "row" : row, "column" : column});
         }
       }
@@ -221,12 +234,18 @@ class AhaTable extends PolymerElement {
     }
 
     prevPage() {
+      if(currentpage == null) {
+        currentpage = 1;
+      }
       if ( currentpage > 1 ) {
         currentpage--;
       }
     }
 
     nextPage() {
+      if(currentpage == null) {
+        currentpage = pageCount;
+      }
       if ( currentpage < pageCount ) {
         currentpage++;
       }
@@ -237,15 +256,11 @@ class AhaTable extends PolymerElement {
     }
 
     currentpageChanged(){
-//      currentpage = currentpage != null ? int.parse(currentpage) : 0;
-      currentpage = currentpage < 1 ? 1 : currentpage;
-      currentpage = pageCount > 0 && currentpage > pageCount ? pageCount : currentpage;
-      filterPage();
-      firstItemIndex = (currentpage-1) * pagesize+1;
-      if (currentpage == pageCount) {
-        lastItemIndex = itemCount;
-      } else {
-        lastItemIndex = (currentpage)* pagesize;
+      if(currentpage != null) {
+        currentpage = currentpage < 1 ? 1 : currentpage;
+        currentpage = pageCount > 0 && currentpage > pageCount ? pageCount : currentpage;
+        filterPage();
+        firstItemIndex = (currentpage-1) * pagesize+1;
       }
     }
 
@@ -258,8 +273,6 @@ class AhaTable extends PolymerElement {
     filterPage() {
       var from = (currentpage-1) * pagesize;
       var to   = from + pagesize;
-      
-//      List filteredRows = _filteredRows != null ? _filteredRows.toList() : data;
 
       _filteredRows = data.where((row) {
         bool result = true;
@@ -272,6 +285,15 @@ class AhaTable extends PolymerElement {
         });
         return result;
       }).toList();
+      
+      itemCount = _filteredRows.length;
+
+      if (currentpage == pageCount) {
+        lastItemIndex = itemCount;
+      } else {
+        lastItemIndex = (currentpage)* pagesize;
+      }
+      
 
       if (sortedColumn != null) {
         _filteredRows.sort((rowA, rowB) =>
@@ -280,10 +302,12 @@ class AhaTable extends PolymerElement {
               : rowB[sortedColumn].compareTo(rowA[sortedColumn]));
       }
       
-      if(_filteredRows.length > from && _filteredRows.length > to)
-        viewingRows = _filteredRows.getRange(from, to);
-      else
-        viewingRows = _filteredRows;
+        if(_filteredRows.length > to)
+          viewingRows = _filteredRows.getRange(from, to);
+        else
+          viewingRows = _filteredRows.getRange(from, _filteredRows.length);
+
+      selectedRowsChanged();
     }
 
     // call when total count is change.
@@ -292,23 +316,16 @@ class AhaTable extends PolymerElement {
         // Usually go to the first page is the best way to avoid chaos.
         currentpage = 1;
       }
-      // Cache the total page count and item count
-      var count = 0;
-      //TODO: change this
-      data.forEach((row) {
-        if (row['_filtered'] == false) {
-          count++;
-        }
-      });
+      
       itemCount = _filteredRows.length;
-      pageCount = ( count / pagesize ).ceil();
+      pageCount = ( itemCount / pagesize ).ceil();
 
       // Update model bound to UI with filtered range
       filterPage();
     }
 
     //data manipulation//
-    clicked(e) {
+    handleTdClick(e) {
       var column = nodeBind(e.target).templateInstance.model['column'];
       var row = nodeBind(e.target).templateInstance.model['row'];
       var detail = {"row" : row, "column" : column};
@@ -318,7 +335,7 @@ class AhaTable extends PolymerElement {
       fire('after-td-click', detail: detail);
     }
 
-    dbclick(e,p) {
+    handleTdDblClick(e,p) {
       var column = nodeBind(e.target).templateInstance.model['column'];
       var row = nodeBind(e.target).templateInstance.model['row'];
       var detail = {"row" : row, "column" : column};
@@ -328,37 +345,38 @@ class AhaTable extends PolymerElement {
     select(e,p){
       if (selectable) {
         var row = nodeBind(e.target).templateInstance.model['row'];
-        var index = selected.indexOf(row);
-        if (index > -1) {
-          if(row['_selected']){
-            selected.removeAt(index);
-            row['_selected'] = false;
-          }
+        if(selectedRows.contains(row)) {
+          // TODO: Check why remove doesn't work
+//          selectedRows.remove(row);
+          selectedRows = toObservable([]..addAll(selectedRows..remove(row)));
         } else {
-          if(!row['_selected']){
-            selected.add(row);
-            row['_selected'] = true;
-          }
-        }
-        if (!row['_editing']) {
-          e.preventDefault();
+          // TODO: Check why add doesn't work
+          selectedRows = toObservable([]..addAll(selectedRows..add(row)));
+//          selectedRows.add(row);
         }
       }
     }
-
+    
     selectall(e,p){
       if(e.target.checked){
-        viewingRows.forEach((row){
-          if(selected.indexOf(row)==-1) {
-            selected.add(row);
-          }
-          row['_selected'] = true;
-        });
+        selectedRows = toObservable(viewingRows);
       }else{
-        data.forEach((row) {
-          row['_selected'] = false;
-        });
+        selectedRows = toObservable([]);
       }
+    }
+    
+//    @ObserveProperty('selectedRows')
+//    bool get allSelected => 
+//        viewingRows.fold(true, (all, row) {
+//    return all && selectedRows.contains(row);
+//  });
+    
+    @observable bool allSelected;
+    
+    selectedRowsChanged() {
+      allSelected = viewingRows.fold(true, (all, row) {
+        return all && selectedRows.contains(row);
+      });
     }
 
     create(obj) {

@@ -99,7 +99,7 @@ itemoftext
       .column-head {
         white-space: nowrap;
       }
-      .sorting {
+      .sorting, .filterrow {
         display: inline-block;
       }
       .sortable .column-head,
@@ -181,7 +181,8 @@ itemoftext
             <input type="checkbox" 
               on-change="{{ selectall }}"
               title="{{ selectalltitle }}"
-              class="{{ selectable ? '' : 'hide'}}"/>
+              class="{{ selectable ? '' : 'hide'}}"
+              checked="{{allSelected}}"/>
             <div
               title="{{searchtitle}}"
               class="filterrow {{ searchable ? 'search' : 'nosearch'}}"
@@ -238,14 +239,14 @@ itemoftext
           class="rows
              {{ row['_modified'] ? 'modified' : '' }}
              {{ row['_editing']  ? 'editing'  : '' }}
-             {{ row['_selected'] ? 'selected'  : '' }}
+             {{ selectedRows.contains(row) ? 'selected'  : '' }}
            ">
           <td>
             <input type="checkbox" 
               title="{{ selecttitle }}"
               class="{{ selectable ? '' : 'hide'}}" 
               on-change="{{ select }}" 
-              checked?="{{ row['_selected'] }}"/>
+              checked="{{ selectedRows.contains(row) }}"/>
             <a class="copy-er {{ copyable ? '' : 'hide' }}" 
               on-click="{{copy}}" 
               title="{{ copytitle }}">
@@ -259,11 +260,11 @@ itemoftext
           </td>
           <td template
             repeat="{{ column in children }}" 
-            on-dblclick="{{ dbclick }}" 
-            on-click="{{ click }}" 
-            title="{{ column.attributes['editable'] ? edittitle: '' }}" 
+            on-dblclick="{{ handleTdDblClick }}" 
+            on-click="{{ handleTdClick }}" 
+            title="{{ column.editable ? edittitle: '' }}" 
             class="aha-td aha-{{column.attributes['name']}}-td">
-<!--             <div class="{{ column.attributes['editable'] && row._editing ? '' : 'hide'}}"> -->
+            <div class="{{ column.editable && row['_editing'] ? '' : 'hide'}}">
 <!--               <select  -->
 <!--                 required?="{{ column.attributes['required'] }}" -->
 <!--                 class="{{ 'choice' == column.attributes['type'] ? '' : 'hide'}}" -->
@@ -301,11 +302,11 @@ itemoftext
 <!--                 class="{{ 'text' == column.attributes['type'] ? '' : 'hide'}}" -->
 <!--                 on-mouseover="{{ focus }}" -->
 <!--                 on-blur="{{ save }}">{{ row[column.attributes['name']] }}</textarea> -->
-<!--               <input type="checkbox" -->
-<!--                 class="{{ 'boolean' == column.attributes['type'] ? '' : 'hide'}}" -->
-<!--                 on-change="{{ save }}"  -->
-<!--                 checked?="{{ row[column.attributes['name']] }}" /> -->
-<!--             </div> -->
+              <input type="checkbox"
+                class="{{ 'boolean' == column.type ? '' : 'hide'}}"
+                on-change="{{ save }}" 
+                checked?="{{ row[column.name] }}" />
+            </div>
             <div class="{{ column.editable && row['_editing'] ? 'hide' : ''}} {{ row[column.name] == null ? 'empty' : ''}}">
 <!--               {{ translate2(row[column.name], column.options, column.placeholder) }} -->
               {{ row[column.name] }}
@@ -313,47 +314,47 @@ itemoftext
           </td>
         </tr>
       </tbody>
-<!--       <tfoot> -->
-<!--         <tr> -->
-<!--           <td colspan="{{meta.length+1}}"> -->
-<!--             <div class="pagination"> -->
-<!--             <span class="paging"> -->
-<!--               <button -->
-<!--                 title="{{firsttitle}}" -->
-<!--                 class='first {{currentpage == 1 ? "disabled" : "available"}} ' -->
-<!--                 on-click="{{firstPage}}">{{first}}</button> -->
-<!--               <button -->
-<!--                 title="{{previoustitle}}" -->
-<!--                 class='previous {{currentpage == 1 ? "disabled" : "available"}}' -->
-<!--                 on-click="{{prevPage}}">{{previous}}</button> -->
-<!--               <span class="pager"> -->
-<!--                 {{pagetext != null ? pagetext ''}} -->
-<!--                 <input type="text" value="{{currentpage}}"/> -->
-<!--                 {{pageoftext || '/'}} -->
-<!--                 {{pageCount}} -->
-<!--               </span> -->
-<!--               <button -->
-<!--                 title="{{nexttitle}}" -->
-<!--                 class='next {{pageCount <= 0 || currentpage == pageCount? "disabled" : "available"}}' -->
-<!--                 on-click="{{nextPage}}">{{next}}</button> -->
-<!--               <button -->
-<!--                 title="{{lasttitle}}" -->
-<!--                 class='last {{pageCount <= 0 || currentpage == pageCount? "disabled" : "available"}}' -->
-<!--                 on-click="{{lastPage}}">{{last}}</button> -->
-<!--             </span> -->
-<!--             <span class="pagesize"> -->
-<!--               {{ pagesizetext || '' }} -->
-<!--               <select value="{{pagesize}}"> -->
-<!--                 <option template repeat="{{n in sizelist}}" selected?="{{ n == pagesize }}">{{n}}</option> -->
-<!--               </select> -->
-<!--             </span> -->
-<!--             <span class="summary"> -->
-<!--               {{ summarytext || ''}} {{ firstItemIndex }} - {{ lastItemIndex }} {{ itemoftext || '/'}} {{ itemCount }} -->
-<!--             </span> -->
-<!--             </div> -->
-<!--           </td> -->
-<!--         </tr> -->
-<!--       </tfoot> -->
+      <tfoot>
+        <tr>
+          <td colspan="{{children.length+1}}">
+            <div class="pagination">
+              <span class="paging">
+                <button
+                  title="{{firsttitle}}"
+                  disabled?="{{currentpage == 1}}"
+                  on-click="{{firstPage}}">{{first}}</button>
+                <button
+                  title="{{previoustitle}}"
+                  disabled?="{{currentpage == 1}}"
+                  on-click="{{prevPage}}">{{previous}}</button>
+                <span class="pager">
+                  {{pagetext != null ? pagetext : ''}}
+                  <input type="text" value="{{currentpage | asInt}}"/>
+                  {{pageoftext != null ? pageoftext : '/'}}
+                  {{pageCount}}
+                </span>
+                <button
+                  title="{{nexttitle}}"
+                  disabled?="{{pageCount <= 0 || currentpage == pageCount}}"
+                  on-click="{{nextPage}}">{{next}}</button>
+                <button
+                  title="{{lasttitle}}"
+                  disabled?="{{pageCount <= 0 || currentpage == pageCount}}"
+                  on-click="{{lastPage}}">{{last}}</button>
+              </span>
+              <span class="pagesize">
+                {{ pagesizetext != null ? pagesizetext : '' }}
+                <select value="{{pagesize | asInt}}">
+                  <option template repeat="{{n in sizelist}}" selected?="{{ n == pagesize }}">{{n}}</option>
+                </select>
+              </span>
+              <span class="summary">
+                {{ summarytext != null ? summarytext : ''}} {{ firstItemIndex }} - {{ lastItemIndex }} {{ itemoftext != null ? itemoftext : '/'}} {{ itemCount }}
+              </span>
+            </div>
+          </td>
+        </tr>
+      </tfoot>
     </table>
   </template>
   <script type="application/dart" src="aha_table.dart"></script>
