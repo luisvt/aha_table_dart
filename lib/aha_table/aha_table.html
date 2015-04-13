@@ -237,8 +237,8 @@ itemoftext
         <tr template
           repeat="{{ row in viewingRows }}"
           class="rows
-             {{ row['_modified'] ? 'modified' : '' }}
-             {{ row['_editing']  ? 'editing'  : '' }}
+             {{ row.modified ? 'modified' : '' }}
+             {{ row.editing  ? 'editing'  : '' }}
              {{ selectedRows.contains(row) ? 'selected'  : '' }}
            ">
           <td>
@@ -246,7 +246,7 @@ itemoftext
               title="{{ selecttitle }}"
               class="{{ selectable ? '' : 'hide'}}" 
               on-change="{{ select }}" 
-              checked="{{ selectedRows.contains(row) }}"/>
+              checked="{{ row.checked }}"/>
             <a class="copy-er {{ copyable ? '' : 'hide' }}" 
               on-click="{{copy}}" 
               title="{{ copytitle }}">
@@ -263,53 +263,53 @@ itemoftext
             on-dblclick="{{ handleTdDblClick }}" 
             on-click="{{ handleTdClick }}" 
             title="{{ column.editable ? edittitle: '' }}" 
-            class="aha-td aha-{{column.attributes['name']}}-td">
-            <div class="{{ column.editable && row['_editing'] ? '' : 'hide'}}">
-<!--               <select  -->
-<!--                 required?="{{ column.attributes['required'] }}" -->
-<!--                 class="{{ 'choice' == column.attributes['type'] ? '' : 'hide'}}" -->
-<!--                 on-change="{{ save }}"  -->
-<!--                 on-blur="{{ save }}"> -->
-<!--                 <option template -->
-<!--                   repeat="{{ option in column.attributes['options'] }}" -->
-<!--                   value="{{ option.value }}"  -->
-<!--                   selected?="{{ row[column.attributes['name']] == option.value }}"> -->
-<!--                   {{ option.label }} -->
-<!--                 </option> -->
-<!--               </select> -->
-<!--               <input type="text"  -->
-<!--                 required?="{{ column.attributes['required'] }}" -->
-<!--                 class="{{ 'string' == column.attributes['type'] ? '' : 'hide'}}" -->
-<!--                 on-blur="{{ save }}"  -->
-<!--                 value="{{ row[column.attributes['name']] }}"/> -->
-<!--               <input type="date"  -->
-<!--                 required?="{{ column.attributes['required'] }}" -->
-<!--                 class="{{ 'date' == column.attributes['type'] ? '' : 'hide'}}" -->
-<!--                 on-blur="{{ save }}"  -->
-<!--                 value="{{ row[column.attributes['name']] }}"/> -->
-<!--               <input type="time"  -->
-<!--                 required?="{{ column.attributes['required'] }}" -->
-<!--                 class="{{ 'time' == column.attributes['type'] ? '' : 'hide'}}" -->
-<!--                 on-blur="{{ save }}"  -->
-<!--                 value="{{ row[column.attributes['name']] }}"/> -->
-<!--               <input type="datetime"  -->
-<!--                 required?="{{ column.attributes['required'] }}" -->
-<!--                 class="{{ 'datetime' == column.attributes['type'] ? '' : 'hide'}}" -->
-<!--                 on-blur="{{ save }}"  -->
-<!--                 value="{{ row[column.attributes['name']] }}"/> -->
-<!--               <textarea -->
-<!--                 required?="{{ column.attributes['required'] }}" -->
-<!--                 class="{{ 'text' == column.attributes['type'] ? '' : 'hide'}}" -->
-<!--                 on-mouseover="{{ focus }}" -->
-<!--                 on-blur="{{ save }}">{{ row[column.attributes['name']] }}</textarea> -->
+            class="aha-td aha-{{column.name}}-td">
+            <div class="{{ column.editable && row.editing ? '' : 'hide'}}">
+              <select 
+                required?="{{ column.required }}"
+                class="{{ 'choice' == column.type ? '' : 'hide'}}"
+                on-change="{{ save }}" 
+                on-blur="{{ save }}">
+                <option template
+                  repeat="{{ option in column.options }}"
+                  value="{{ option['value'] }}" 
+                  selected?="{{ row.value[column.name] == option['value'] }}">
+                  {{ option['label'] }}
+                </option>
+              </select>
+              <input type="text" 
+                required?="{{ column.required }}"
+                class="{{ 'string' == column.type ? '' : 'hide'}}"
+                on-blur="{{ save }}" 
+                value="{{ row.value[column.name] }}"/>
+              <input type="date" 
+                required?="{{ column.required }}"
+                class="{{ 'date' == column.type ? '' : 'hide'}}"
+                on-blur="{{ save }}" 
+                value="{{ row.value[column.name] }}"/>
+              <input type="time" 
+                required?="{{ column.required }}"
+                class="{{ 'time' == column.type ? '' : 'hide'}}"
+                on-blur="{{ save }}" 
+                value="{{ row.value[column.name] }}"/>
+              <input type="datetime" 
+                required?="{{ column.required }}"
+                class="{{ 'datetime' == column.type ? '' : 'hide'}}"
+                on-blur="{{ save }}" 
+                value="{{ row.value[column.name] }}"/>
+              <textarea
+                required?="{{ column.required }}"
+                class="{{ 'text' == column.type ? '' : 'hide'}}"
+                on-mouseover="{{ focus }}"
+                on-blur="{{ save }}">{{ row.value[column.name] }}</textarea>
               <input type="checkbox"
                 class="{{ 'boolean' == column.type ? '' : 'hide'}}"
                 on-change="{{ save }}" 
-                checked?="{{ row[column.name] }}" />
+                checked?="{{ row.value[column.name] }}" />
             </div>
-            <div class="{{ column.editable && row['_editing'] ? 'hide' : ''}} {{ row[column.name] == null ? 'empty' : ''}}">
-<!--               {{ translate2(row[column.name], column.options, column.placeholder) }} -->
-              {{ row[column.name] }}
+            <div class="{{ column.editable && row.editing ? 'hide' : ''}} {{ row.value[column.name] == null ? 'empty' : ''}}">
+<!--               {{ translate2(row.value[column.name], column.options, column.placeholder) }} -->
+              {{ row.value[column.name] }}
             </div>
           </td>
         </tr>

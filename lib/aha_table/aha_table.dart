@@ -16,6 +16,14 @@ class StringToInt extends Transformer<String, int> {
   }
 }
 
+class AhaRow extends Observable {
+  @observable int index = 0;
+  @observable bool checked = false;
+  @observable bool editing = false;
+  @observable bool modified = false;
+  @observable var value;
+}
+
 @CustomTag('aha-table')
 class AhaTable extends PolymerElement {
   
@@ -65,11 +73,11 @@ class AhaTable extends PolymerElement {
     @published String sortedColumn;
     //editingRow: current editing row
     //@type {Object}
-    @published Map editingRow = null;
+    @published AhaRow editingRow = null;
     //if filtering has been performed.
     @published bool filtered = false;
     //editingRow: current rows in display/view
-    @published Iterable viewingRows = [];
+    @published ObservableList<AhaRow> viewingRows = toObservable([]);
     //descending: current sorting order
     @published bool descending = false;
     //pagesize: the number of items to show per page
@@ -167,24 +175,24 @@ class AhaTable extends PolymerElement {
 
     edited(e) {
       var row = nodeBind(e.target).templateInstance.model['row'];
-      row['_editing'] = true;
+      row.editing = true;
       if (editingRow != null && editingRow != row) {
-        editingRow['_editing'] = false;
+        editingRow.editing = false;
       }
       editingRow = row;
     }
 
     save(e) {
-      ObservableMap row    = nodeBind(e.target).templateInstance.model['row'];
+      AhaRow row    = nodeBind(e.target).templateInstance.model['row'];
       var column = nodeBind(e.target).templateInstance.model['column'];
       if(row != null){
         if ("CHECKBOX" == e.target.type.toUpperCase()) {
-          row[column.name] = e.target.checked;
+          row.value[column.name] = e.target.checked;
         } else {
-          row[column.name] = e.target.value;
+          row.value[column.name] = e.target.value;
         }
         if (modified.indexOf(row) == -1) {
-          row['_modified'] = true;
+          row.modified = true;
           modified.add(row);
         }
 
@@ -192,7 +200,7 @@ class AhaTable extends PolymerElement {
 //        if (!e.relatedTarget 
 //          || !e.relatedTarget.templateInstance
 //          || e.relatedTarget.templateInstance.model.row != nodeBind(e.target).templateInstance.model['row']) {
-          row['_editing'] = false;
+          row.editing = false;
 //        }
 
         if (column.required != null && !e.target.validity.valid) {
@@ -302,10 +310,18 @@ class AhaTable extends PolymerElement {
               : rowB[sortedColumn].compareTo(rowA[sortedColumn]));
       }
       
-        if(_filteredRows.length > to)
-          viewingRows = _filteredRows.getRange(from, to);
-        else
-          viewingRows = _filteredRows.getRange(from, _filteredRows.length);
+      var _viewingRows, i = 0;
+      
+      if(_filteredRows.length > to)
+        _viewingRows = _filteredRows.getRange(from, to);
+      else
+        _viewingRows = _filteredRows.getRange(from, _filteredRows.length);
+        
+      viewingRows = toObservable(_viewingRows.map((vr) => 
+          new AhaRow()
+            ..index = i++
+            ..value = vr
+      ).toList());
 
       selectedRowsChanged();
     }
@@ -342,26 +358,27 @@ class AhaTable extends PolymerElement {
       fire('after-td-dbclick', detail: detail);
     }
 
+    @observable bool allSelected;
+    
     select(e,p){
       if (selectable) {
-        var row = nodeBind(e.target).templateInstance.model['row'];
+        AhaRow row = nodeBind(e.target).templateInstance.model['row'];
         if(selectedRows.contains(row)) {
-          // TODO: Check why remove doesn't work
-//          selectedRows.remove(row);
-          selectedRows = toObservable([]..addAll(selectedRows..remove(row)));
+          selectedRows.remove(row);
         } else {
-          // TODO: Check why add doesn't work
-          selectedRows = toObservable([]..addAll(selectedRows..add(row)));
-//          selectedRows.add(row);
+          selectedRows.add(row);
         }
       }
     }
     
     selectall(e,p){
       if(e.target.checked){
-        selectedRows = toObservable(viewingRows);
+        viewingRows.forEach((vr) => vr.checked = true);
+        selectedRows.clear();
+        selectedRows.addAll(viewingRows);
       }else{
-        selectedRows = toObservable([]);
+        selectedRows.clear();
+        viewingRows.forEach((vr) => vr.checked = false);
       }
     }
     
@@ -371,11 +388,9 @@ class AhaTable extends PolymerElement {
 //    return all && selectedRows.contains(row);
 //  });
     
-    @observable bool allSelected;
-    
     selectedRowsChanged() {
-      allSelected = viewingRows.fold(true, (all, row) {
-        return all && selectedRows.contains(row);
+      allSelected = viewingRows.fold(true, (_allSelected, row) {
+        return _allSelected && row.checked;
       });
     }
 
@@ -394,9 +409,9 @@ class AhaTable extends PolymerElement {
     }
 
     copy(e, detail, sender) {
-      var obj = nodeBind(e.target).templateInstance.model['row'];
-      fire('before-copy', detail: obj);
-      var _new = JSON.decode(JSON.encode(obj));
+      AhaRow row = nodeBind(e.target).templateInstance.model['row'];
+      fire('before-copy', detail: row);
+      var _new = JSON.decode(JSON.encode(row.value));
       if (_new.id) {
         _new.id = null;
       }

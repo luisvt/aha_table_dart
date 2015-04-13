@@ -6,8 +6,8 @@
   <template>
     <aha-table data="{{tableData}}" selectable>
       <aha-column name="first" editable searchable type="boolean"></aha-column>
-      <aha-column name="second" searchable type="choice" options="{{secondOptions}}" sortable></aha-column>
-      <aha-column name="third" searchable type="text" searchplaceholder="some placeholder" sortable></aha-column>
+      <aha-column name="second" editable searchable type="choice" options="{{secondOptions}}" sortable></aha-column>
+      <aha-column name="third" editable searchable type="text" searchplaceholder="some placeholder" sortable></aha-column>
     </aha-table>
   </template>
   <script type="application/dart" src="aha_table_demo.dart"></script>
