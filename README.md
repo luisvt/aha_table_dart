@@ -7,46 +7,34 @@ A Polymer element for a searchable, sortable, paginatable, inline-editable, sele
 
 ## Usage
 
-1. Import Web Components' polyfill:
+```html
+<link rel="import" href="packages/aha_table/aha_table/aha_table.html">
+```
 
-    ```html
-    <script src="bower_components/platform/platform.js"></script>
-    ```
+Start using it!
 
-2. Import Custom Element:
+```html
+<aha-table
+      selectable
+      copyable
+      removable
+      movable
+      seachable
+      pagesize="20" 
+      pagesizetitle="Page Size:" 
+      summarytitle="Viewing">
 
-    ```html
-    <link rel="import" href="bower_components/aha-table/dist/aha-table.html">
-    ```
-
-3. Start using it!
-
-    ```html
-    <aha-table></aha-table>
-    ```
-
-    ```html
-    <aha-table
-          selectable
-          copyable
-          removable
-          movable
-          seachable
-          pagesize="20" 
-          pagesizetitle="Page Size:" 
-          summarytitle="Viewing">
-
-          <aha-column name="title" 
-              type="string" 
-              sortable
-              searchable
-              required
-              placeholder="Empty Field Placeholder Text" 
-              default="" 
-              hint="a hint in column header">
-          </aha-column>
-     </aha-table>
-    ```
+      <aha-column name="title" 
+          type="string" 
+          sortable
+          searchable
+          required
+          placeholder="Empty Field Placeholder Text" 
+          default="" 
+          hint="a hint in column header">
+      </aha-column>
+ </aha-table>
+```
 
 ## &lt;aha-table&gt;
 
