@@ -1,0 +1,369 @@
+<!--
+//http://webcomponents.github.io/articles/web-components-best-practices/
+-->
+<!--
+/**
+ * @module aha-table
+ *
+ *
+ * Searchable Sortable Editable Paginatable Data Table
+ *
+ * aha-table is an data table/grid, it cousumes a modal data
+ * and modal meta to show a table that can search, sort, edit
+ * in place and pagiation, click to edit.
+ * 
+ * Examples:
+ *
+ *     <aha-table></aha-table>
+ *
+ *     <aha-table id="raw" 
+ *         selectable="true" 
+ *         copyable="true"
+ *         seachable="true"
+ *         pagesize="20" 
+ *         pagesizetitle="Page Size:" 
+ *         summarytitle="Viewing">
+ *         <aha-column name="title" 
+ *             type="string" 
+ *             label="My Title"
+ *             sortable="true"
+ *             searchable="true"
+ *             required="true"
+ *             editable="false"
+ *             placeholder="" 
+ *             default="" 
+ *             hint="Meaning title will help you remember">
+ *         </aha-column>
+ *     </aha-table/>
+ *
+ * Available Event Hander:
+ *     after-invalid(Object detail)
+ *     after-td-click(Object detail)
+ *     after-td-dbclick(Object detail)
+ *     after-create(Object new_record)
+ *     after-copy(Object new_record)
+ *     after-remove(Object removed_record)
+ *
+ * @class aha-table
+ * @author Louis Liu<louis.wenchao.liu@gmail.com>
+ *
+ */
+-->
+
+<link rel="import" href="../../packages/polymer/polymer.html">
+
+<polymer-element name="aha-table" attributes="
+selectable 
+searchable 
+copyable 
+removable
+pagesize 
+sizelist
+selecttitle 
+selectalltitle 
+sorttitle 
+columntitle 
+copytitle 
+removetitle 
+edittitle 
+searchtitle 
+firsttitle
+nexttitle 
+previoustitle 
+lasttitle
+pagetext 
+pageoftext 
+pagesizetext 
+summarytext 
+itemoftext
+">
+  <template>
+    <style>
+      /* styles for the custom element itself - lowest specificity */
+      :host { 
+        display: block;
+      }
+      
+      #aha_table_main {
+        border: black solid thin;
+      }
+      
+      #aha_table_main td, #aha_table_main th {
+        border: black solid thin;
+      }
+      
+      tbody > tr:hover{
+        background-color: #BEBEBE;
+      } 
+      tr.selected {
+        background-color: blue;
+        color: white;
+      }
+      tr.selected:hover {
+        background-color: darkblue;
+      }
+      .column-head {
+        white-space: nowrap;
+      }
+      .sorting, .filterrow {
+        display: inline-block;
+      }
+      .sortable .column-head,
+      .filterrow {
+        cursor: pointer;
+      }
+      .sortable .column-head:hover {
+        text-decoration: underline;
+      }
+      .arrow-up,
+      .arrow-down,
+      .search,
+      .nosearch {
+        width: 0; 
+        height: 0; 
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+      }
+      .arrow-up,
+      .search {
+        border-bottom: 5px solid black;
+      }
+      .arrow-down,
+      .nosearch {
+        border-top: 5px solid black;
+      }
+      .copy-er, 
+      .remove-er {
+        cursor: pointer;
+      }
+      .copy-er i:before{
+        content: '+';
+      }
+      .remove-er i:before {
+        content: '-';
+      }
+      .hint:before {
+        content: 'i';
+      }
+      .searchable input, 
+      .searchable select {
+        width: 80px;
+      }
+      .pagination .active {
+        background-color: #ccc;
+      }
+      .pagination .available:hover {
+        background-color: #eee;
+      }
+      .pagination .disabled {
+        color: #ccc;
+      }
+      .pagination button+button {
+        margin-left: -10px;
+      }
+      .pagination button {
+        background-color: #fff;
+        border: 1px solid #eee;
+        cursor: pointer;
+        user-select: none;
+      }
+      .pagination input {
+        background-color: #fff;
+        border: 1px solid #eee;
+        width: 20px;
+      }
+      .hide {
+        display: none !important;
+      }
+      .empty {
+        font-style: italic;
+        color: #999;
+      }
+    </style>
+    <table id="aha_table_main" unresolved="">
+      <thead>
+        <tr>
+          <th>
+            <input type="checkbox" 
+              on-change="{{ selectall }}"
+              title="{{ selectalltitle }}"
+              class="{{ selectable ? '' : 'hide'}}"
+              checked="{{allSelected}}"/>
+            <div
+              title="{{searchtitle}}"
+              class="filterrow {{ searchable ? 'search' : 'nosearch'}}"
+              on-click="{{ toggleFilters }}"></div>
+          </th>
+          <th template 
+            repeat="{{ column in children }}"
+            title="{{ columntitle }}"
+            class="{{ column.sortable ? 'sortable' : ''}} aha-{{column.name}}-th">
+            <span class="
+               {{ sortedColumn == column.name ? 'sorting ' : 'hide'}} 
+               {{ descending ? 'arrow-down' : 'arrow-up'}}"> 
+            </span>
+            <span 
+              class="column-head" 
+              title="{{sorttitle}}"
+              on-click="{{ handleSort }}">{{ column.label != null ? column.label : column.name | capitalize }}</span>
+            <span 
+              class="{{ column.hint != null ? 'hint' : 'hide' }}" 
+              title="{{ column.hint }}"></span>
+          </th>
+        </tr>
+        <tr hidden?="{{ !searchable }}">
+          <th></th>
+          <th template repeat="{{ column in children }}" class="searchable">
+              <template if="{{ 'choice' == column.type }}">
+                <select on-change="{{ search }}" >
+                    <option selected?="{{searchMap[column.name] == null}}"></option>
+                    <option template 
+                      repeat="{{ option in column.options }}"
+                      value="{{ option }}"
+                      selected?="{{searchMap[column.name] == null}}">
+                      {{ option }}
+                    </option>
+                </select>
+              </template>
+              <template if="{{ 'boolean' == column.type }}">
+                <input 
+                  type="checkbox" 
+                  on-change="{{ search }}" 
+                  checked="{{searchMap[column.name] != null ? 'checked' : '' }}"/>
+              </template>
+              <template if="{{ 'choice' != column.type && 'boolean' != column.type }}">
+                <input type="text" 
+                  on-keyup="{{ search }}" 
+                  placeholder="{{ column.searchplaceholder }}" 
+                  value="{{searchMap[column.name]}}"/>
+              </template>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr template
+          repeat="{{ row in viewingRows }}"
+          class="
+             {{ row.modified ? 'modified' : '' }}
+             {{ row.editing  ? 'editing'  : '' }}
+             {{ row.selected ? 'selected'  : '' }}
+           ">
+          <td>
+            <input type="checkbox" 
+              title="{{ selecttitle }}"
+              class="{{ selectable ? '' : 'hide'}}" 
+              on-change="{{ select }}" 
+              checked="{{ row.selected }}"/>
+            <a class="copy-er {{ copyable ? '' : 'hide' }}" 
+              on-click="{{copy}}" 
+              title="{{ copytitle }}">
+              <i></i>
+            </a>
+            <a class="remove-er {{ removable ? '' : 'hide' }}" 
+              on-click="{{remove}}" 
+              title="{{ removetitle }}">
+              <i></i>
+            </a>
+          </td>
+          <td template
+            repeat="{{ column in children }}" 
+            on-dblclick="{{ handleTdDblClick }}" 
+            on-click="{{ handleTdClick }}" 
+            title="{{ column.editable ? edittitle: '' }}" 
+            class="aha-td aha-{{column.name}}-td">
+            <div class="{{ column.editable && row.editing ? '' : 'hide'}}">
+              <select 
+                required?="{{ column.required }}"
+                class="{{ 'choice' == column.type ? '' : 'hide'}}"
+                on-change="{{ save }}" 
+                on-blur="{{ save }}">
+                <option template
+                  repeat="{{ option in column.options }}"
+                  value="{{ option }}" 
+                  selected?="{{ row.value[column.name] == option }}">
+                  {{ option }}
+                </option>
+              </select>
+              <input type="text" 
+                required?="{{ column.required }}"
+                class="{{ 'string' == column.type ? '' : 'hide'}}"
+                on-blur="{{ save }}" 
+                value="{{ row.value[column.name] }}"/>
+              <input type="date" 
+                required?="{{ column.required }}"
+                class="{{ 'date' == column.type ? '' : 'hide'}}"
+                on-blur="{{ save }}" 
+                value="{{ row.value[column.name] }}"/>
+              <input type="time" 
+                required?="{{ column.required }}"
+                class="{{ 'time' == column.type ? '' : 'hide'}}"
+                on-blur="{{ save }}" 
+                value="{{ row.value[column.name] }}"/>
+              <input type="datetime" 
+                required?="{{ column.required }}"
+                class="{{ 'datetime' == column.type ? '' : 'hide'}}"
+                on-blur="{{ save }}" 
+                value="{{ row.value[column.name] }}"/>
+              <textarea
+                required?="{{ column.required }}"
+                class="{{ 'text' == column.type ? '' : 'hide'}}"
+                on-mouseover="{{ focus }}"
+                on-blur="{{ save }}">{{ row.value[column.name] }}</textarea>
+              <input type="checkbox"
+                class="{{ 'boolean' == column.type ? '' : 'hide'}}"
+                on-change="{{ save }}" 
+                checked?="{{ row.value[column.name] }}" />
+            </div>
+            <div class="{{ column.editable && row.editing ? 'hide' : ''}} {{ row.value[column.name] == null ? 'empty' : ''}}">
+<!--               {{ translate2(row.value[column.name], column.options, column.placeholder) }} -->
+              {{ row.value[column.name] }}
+            </div>
+          </td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="{{children.length+1}}">
+            <div class="pagination">
+              <span class="paging">
+                <button
+                  title="{{firsttitle}}"
+                  disabled?="{{currentpage == 1}}"
+                  on-click="{{firstPage}}">{{first}}</button>
+                <button
+                  title="{{previoustitle}}"
+                  disabled?="{{currentpage == 1}}"
+                  on-click="{{prevPage}}">{{previous}}</button>
+                <span class="pager">
+                  {{pagetext != null ? pagetext : ''}}
+                  <input type="text" value="{{currentpage | asInt}}"/>
+                  {{pageoftext != null ? pageoftext : '/'}}
+                  {{pageCount}}
+                </span>
+                <button
+                  title="{{nexttitle}}"
+                  disabled?="{{pageCount <= 0 || currentpage == pageCount}}"
+                  on-click="{{nextPage}}">{{next}}</button>
+                <button
+                  title="{{lasttitle}}"
+                  disabled?="{{pageCount <= 0 || currentpage == pageCount}}"
+                  on-click="{{lastPage}}">{{last}}</button>
+              </span>
+              <span class="pagesize">
+                {{ pagesizetext != null ? pagesizetext : '' }}
+                <select value="{{pagesize | asInt}}">
+                  <option template repeat="{{n in sizelist}}" selected?="{{ n == pagesize }}">{{n}}</option>
+                </select>
+              </span>
+              <span class="summary">
+                {{ summarytext != null ? summarytext : ''}} {{ firstItemIndex }} - {{ lastItemIndex }} {{ itemoftext != null ? itemoftext : '/'}} {{ itemCount }}
+              </span>
+            </div>
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+  </template>
+  <script type="application/dart" src="aha_table.dart"></script>
+</polymer-element>
+
