@@ -6,7 +6,7 @@ homepage: https://github.com/luisvt/aha_table_dart
 environment:
   sdk: '>=1.6.0'
 dependencies:
-  polymer: '>=0.15.0 <0.16.0'
+  polymer: '>=0.15.0 <0.17.0'
 transformers:
 - polymer:
-    entry_points: examples/index.html
+    entry_points: example/index.html
