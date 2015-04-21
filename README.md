@@ -126,7 +126,7 @@ IE 10+ ✔ | Latest ✔ | Latest ✔ | Latest ✔ | Latest ✔ |
 
 ## History
 
-For detailed changelog, check [Releases](https://github.com/liuwenchao/aha-table/releases).
+For detailed changelog, check [Releases](https://github.com/luisvt/aha_table_dart/releases).
 
 ## License
 
