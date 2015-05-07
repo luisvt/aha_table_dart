@@ -1,5 +1,5 @@
 name: aha_table
-version: 0.0.1
+version: 0.0.2
 author: Luis Vargas <luisvargastijerino@gmail.com>
 description: A Polymer element for a searchable, sortable, paginatable, inline-editable, selectable, copyable, removable, movable table/grid.
 homepage: https://github.com/luisvt/aha_table_dart
