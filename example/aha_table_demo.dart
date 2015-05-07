@@ -17,5 +17,4 @@ class AhaTableDemo extends PolymerElement{
     {'first': false, 'second': 'opt2', 'third': 'eight'},
     {'first': true, 'second': 'opt1', 'third': 'nine'}
   ]);
-  
 }

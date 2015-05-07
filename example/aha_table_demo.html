@@ -4,11 +4,21 @@
 
 <polymer-element name="aha-table-demo">
   <template>
-    <aha-table dataRows="{{tableData}}" selectable>
+    <aha-table id="myTable"
+      dataRows="{{tableData}}" 
+      selectable
+      copyable
+      removable
+      movable
+      searchable
+      pagesize="20"
+      pagesizetitle="Page Size:"
+      summarytitle="Viewing">
       <aha-column name="first" editable searchable type="boolean"></aha-column>
       <aha-column name="second" editable searchable type="choice" options="{{secondOptions}}" sortable></aha-column>
       <aha-column name="third" editable searchable type="text" searchplaceholder="some placeholder" sortable></aha-column>
     </aha-table>
+    <template repeat="{{row in tableData}}"><p>{{row['third']}}</p></template>
   </template>
   <script type="application/dart" src="aha_table_demo.dart"></script>
 </polymer-element>

@@ -6,6 +6,7 @@ aha_table_dart
 A Polymer element for a searchable, sortable, paginatable, inline-editable, selectable, copyable, removable, movable table/grid.
 
 ## Usage
+Import it!
 
 ```html
 <link rel="import" href="packages/aha_table/aha_table/aha_table.html">
@@ -19,7 +20,7 @@ Start using it!
       copyable
       removable
       movable
-      seachable
+      searchable
       pagesize="20" 
       pagesizetitle="Page Size:" 
       summarytitle="Viewing">
@@ -33,8 +34,10 @@ Start using it!
           default="" 
           hint="a hint in column header">
       </aha-column>
- </aha-table>
+</aha-table>
 ```
+
+view [example code](https://github.com/luisvt/aha_table_dart/tree/master/example)
 
 ## &lt;aha-table&gt;
 
@@ -126,7 +129,7 @@ IE 10+ ✔ | Latest ✔ | Latest ✔ | Latest ✔ | Latest ✔ |
 
 ## History
 
-For detailed changelog, check [Releases](https://github.com/liuwenchao/aha-table/releases).
+For detailed changelog, check [Releases](https://github.com/luisvt/aha_table_dart/releases).
 
 ## License
 

@@ -51,7 +51,7 @@ class AhaTable extends PolymerElement {
   /// operations, because the element doesn't assume there's an id column,
   /// so you need to determine if by yourself, like check
   /// if the id exists if your model has an id column.
-  @published List modified = [];
+  @published List modifiedRows = [];
 
   /// all deleted row will be moved here.
   @published List deleted = [];
@@ -210,15 +210,18 @@ class AhaTable extends PolymerElement {
 //      }
     var i = 1;
     _dataRowsAux = dataRows.map((dr) =>
-      new AhaRow()
-        ..index = i++
-        ..value = dr
+    new AhaRow()
+      ..index = i++
+      ..value = dr
+      ..modified = modifiedRows.contains(dr)
+      ..selected = selectedRows.contains(dr)
     ).toList();
+
     refreshPagination(true);
   }
 
-  modifiedChanged() {
-  }
+//  modifiedRowsChanged() {
+//  }
 
   //translate value to labels for select
   translate2(value, options, blank) {
@@ -258,17 +261,12 @@ class AhaTable extends PolymerElement {
       } else {
         row.value[column.name] = e.target.value;
       }
-      if (modified.indexOf(row) == -1) {
+      if (modifiedRows.indexOf(row) == -1) {
         row.modified = true;
-        modified.add(row);
+        modifiedRows.add(row);
       }
 
-      //TODO: check correctly
-//        if (!e.relatedTarget 
-//          || !e.relatedTarget.templateInstance
-//          || e.relatedTarget.templateInstance.model.row != nodeBind(e.target).templateInstance.model['row']) {
       row.editing = false;
-//        }
 
       if (column.required != null && !e.target.validity.valid) {
         fire('after-invalid', detail: {"event": e, "row" : row, "column" : column});
@@ -346,6 +344,8 @@ class AhaTable extends PolymerElement {
 
   /// refresh the values of current page and viewing rows
   refreshPagination([keepInTheCurentPage = false]) {
+    if(_dataRowsAux == null) return;
+
     if (!keepInTheCurentPage) {
       // Usually go to the first page is the best way to avoid chaos.
       currentpage = 1;
@@ -437,12 +437,13 @@ class AhaTable extends PolymerElement {
   }
 
   selectall(e) {
+    selectedRows.clear();
     if (e.target.checked) {
-      viewingRows.forEach((vr) => vr.selected = true);
-      selectedRows.clear();
-      selectedRows.addAll(viewingRows);
+      viewingRows.forEach((vr) { 
+        vr.selected = true;
+        selectedRows.add(vr.value);
+      });
     } else {
-      selectedRows.clear();
       viewingRows.forEach((vr) => vr.selected = false);
     }
   }
@@ -463,41 +464,29 @@ class AhaTable extends PolymerElement {
       }
     });
     dataRows.insert(0, _new);
-    modified.add(_new);
+    modifiedRows.add(_new);
     fire('after-create', detail: _new);
   }
 
-  copy(e, detail, sender) {
+  copyRow(e, detail, sender) {
     AhaRow row = nodeBind(e.target).templateInstance.model['row'];
     fire('before-copy', detail: row);
-    var _new = JSON.decode(JSON.encode(row.value));
-    if (_new.id) {
-      _new.id = null;
+    var _new = toObservable(new Map.from(row.value));
+    if (_new['id'] != null) {
+      _new['id'] = null;
     }
-    if (_new._selected) {
-      _new._selected = false;
-    }
-    _new._modified = true;
-    _new._editing = false;
-    dataRows.insert(0, _new);
-    modified.add(_new);
+    dataRows.insert(row.index, _new);
+    modifiedRows.add(_new);
     fire('after-copy', detail: _new);
   }
 
-  handleRemove(e, detail, target) {
-    var obj = nodeBind(target).templateInstance.model['row'];
-    fire('before-remove', detail: obj);
-    var found_index = dataRows.indexOf(obj);
-    if (found_index != -1) {
-      dataRows.removeAt(found_index);
-      deleted.add(obj);
+  removeRow(e, detail, target) {
+    AhaRow row = nodeBind(target).templateInstance.model['row'];
+    fire('before-remove', detail: row);
+    if (dataRows.remove(row.value)) {
+      deleted.add(row.value);
     }
-    var found_index_in_modified = modified.indexOf(obj);
-    if (found_index_in_modified != -1) {
-      obj._modified = false;
-      modified.removeAt(found_index_in_modified);
-    }
-    fire('after-remove', detail: obj);
+    fire('after-remove', detail: row);
   }
 
   toggleFilters() {

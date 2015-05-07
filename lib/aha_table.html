@@ -52,31 +52,7 @@
 
 <link rel="import" href="../../packages/polymer/polymer.html">
 
-<polymer-element name="aha-table" attributes="
-selectable 
-searchable 
-copyable 
-removable
-pagesize 
-sizelist
-selecttitle 
-selectalltitle 
-sorttitle 
-columntitle 
-copytitle 
-removetitle 
-edittitle 
-searchtitle 
-firsttitle
-nexttitle 
-previoustitle 
-lasttitle
-pagetext 
-pageoftext 
-pagesizetext 
-summarytext 
-itemoftext
-">
+<polymer-element name="aha-table">
   <template>
     <style>
       /* styles for the custom element itself - lowest specificity */
@@ -255,12 +231,12 @@ itemoftext
               on-change="{{ select }}" 
               checked="{{ row.selected }}"/>
             <a class="copy-er {{ copyable ? '' : 'hide' }}" 
-              on-click="{{copy}}" 
+              on-click="{{copyRow}}" 
               title="{{ copytitle }}">
               <i></i>
             </a>
             <a class="remove-er {{ removable ? '' : 'hide' }}" 
-              on-click="{{remove}}" 
+              on-click="{{removeRow}}" 
               title="{{ removetitle }}">
               <i></i>
             </a>
