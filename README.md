@@ -9,7 +9,7 @@ A Polymer element for a searchable, sortable, paginatable, inline-editable, sele
 Import it!
 
 ```html
-<link rel="import" href="packages/aha_table/aha_table/aha_table.html">
+<link rel="import" href="packages/aha_table/aha_table.html">
 ```
 
 Start using it!
