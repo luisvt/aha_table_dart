@@ -344,6 +344,8 @@ class AhaTable extends PolymerElement {
 
   /// refresh the values of current page and viewing rows
   refreshPagination([keepInTheCurentPage = false]) {
+    // We need to check this for the first time table is loaded
+    // and attributes like pageSize has been setted.
     if(_dataRowsAux == null) return;
 
     if (!keepInTheCurentPage) {
@@ -426,11 +428,11 @@ class AhaTable extends PolymerElement {
   select(e) {
     if (selectable) {
       AhaRow row = nodeBind(e.target).templateInstance.model['row'];
-      if (selectedRows.contains(row)) {
-        selectedRows.remove(row);
+      if (selectedRows.contains(row.value)) {
+        selectedRows.remove(row.value);
         row.selected = false;
       } else {
-        selectedRows.add(row);
+        selectedRows.add(row.value);
         row.selected = true;
       }
     }
