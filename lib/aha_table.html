@@ -197,7 +197,7 @@
                     <option template 
                       repeat="{{ option in column.options }}"
                       value="{{ option }}"
-                      selected?="{{searchMap[column.name] == null}}">
+                      selected?="{{searchMap[column.name] == option}}">
                       {{ option }}
                     </option>
                 </select>
