@@ -1,5 +1,4 @@
 import 'package:polymer/polymer.dart';
-import 'dart:convert';
 import 'package:template_binding/template_binding.dart';
 import 'dart:html';
 import 'package:aha_table/aha_column/aha_column.dart';
@@ -392,7 +391,7 @@ class AhaTable extends PolymerElement {
       : rowB.value[sortedColumn].compareTo(rowA.value[sortedColumn]));
     }
 
-    var _viewingRows, i = 0;
+    var _viewingRows;
 
     if (_filteredRows.length > to)
       _viewingRows = _filteredRows.getRange(from, to);
