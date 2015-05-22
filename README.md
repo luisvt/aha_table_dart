@@ -3,7 +3,17 @@ aha_table_dart
 
 > A port of aha-table to dart
 
-A Polymer element for a searchable, sortable, paginatable, inline-editable, selectable, copyable, removable, movable table/grid.
+A Polymer element for table/grid.
+
+## Features
+* searchable
+* sortable
+* paginable
+* inline-editable
+* selectable
+* copyable
+* removable
+* movable.
 
 ## Usage
 Import it!
