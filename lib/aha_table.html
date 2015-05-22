@@ -52,140 +52,46 @@
 
 <link rel="import" href="../../packages/polymer/polymer.html">
 <link rel="import" href="../../packages/aha_table/aha_column/aha_column.html">
+<link rel="import" href="../../packages/core_elements/core_icons.html">
+<link rel="import" href="../../packages/core_elements/av_icons.html">
+<link rel="import" href="../../packages/core_elements/core_icon_button.html">
+<link rel="import" href="../../packages/paper_elements/paper_checkbox.html">
+<link rel="import" href="../../packages/paper_elements/paper_input.html">
 
 <polymer-element name="aha-table">
   <template>
-    <style>
-      /* styles for the custom element itself - lowest specificity */
-      :host { 
-        display: block;
-      }
-      
-      #aha_table_main {
-        border: black solid thin;
-      }
-      
-      #aha_table_main td, #aha_table_main th {
-        border: black solid thin;
-      }
-      
-      tbody > tr:hover{
-        background-color: #BEBEBE;
-      } 
-      tr.selected {
-        background-color: blue;
-        color: white;
-      }
-      tr.selected:hover {
-        background-color: darkblue;
-      }
-      .column-head {
-        white-space: nowrap;
-      }
-      .sorting, .filterrow {
-        display: inline-block;
-      }
-      .sortable .column-head,
-      .filterrow {
-        cursor: pointer;
-      }
-      .sortable .column-head:hover {
-        text-decoration: underline;
-      }
-      .arrow-up,
-      .arrow-down,
-      .search,
-      .nosearch {
-        width: 0; 
-        height: 0; 
-        border-left: 5px solid transparent;
-        border-right: 5px solid transparent;
-      }
-      .arrow-up,
-      .search {
-        border-bottom: 5px solid black;
-      }
-      .arrow-down,
-      .nosearch {
-        border-top: 5px solid black;
-      }
-      .copy-er, 
-      .remove-er {
-        cursor: pointer;
-      }
-      .copy-er i:before{
-        content: '+';
-      }
-      .remove-er i:before {
-        content: '-';
-      }
-      .hint:before {
-        content: 'i';
-      }
-      .searchable input, 
-      .searchable select {
-        width: 80px;
-      }
-      .pagination .active {
-        background-color: #ccc;
-      }
-      .pagination .available:hover {
-        background-color: #eee;
-      }
-      .pagination .disabled {
-        color: #ccc;
-      }
-      .pagination button+button {
-        margin-left: -10px;
-      }
-      .pagination button {
-        background-color: #fff;
-        border: 1px solid #eee;
-        cursor: pointer;
-        user-select: none;
-      }
-      .pagination input {
-        background-color: #fff;
-        border: 1px solid #eee;
-        width: 20px;
-      }
-      .hide {
-        display: none !important;
-      }
-      .empty {
-        font-style: italic;
-        color: #999;
-      }
-    </style>
-    <table id="aha_table_main" unresolved="">
+  <link rel="stylesheet" href="aha_table.css">
+    <table id="aha_table_main" unresolved>
       <thead>
         <tr>
           <th>
-            <input type="checkbox" 
-              on-change="{{ selectall }}"
-              title="{{ selectalltitle }}"
-              class="{{ selectable ? '' : 'hide'}}"
-              checked="{{allSelected}}"/>
-            <div
-              title="{{searchtitle}}"
-              class="filterrow {{ searchable ? 'search' : 'nosearch'}}"
-              on-click="{{ toggleFilters }}"></div>
+            <div horizontal layout>
+              <paper-checkbox 
+                on-change="{{ selectall }}"
+                title="{{ selectalltitle }}"
+                class="{{ selectable ? '' : 'hide'}}"
+                checked="{{allSelected}}"></paper-checkbox>
+              <core-icon-button
+                id="searchIcon"
+                title="{{searchtitle}}"
+                icon="arrow-drop-{{ !searchable ? 'down' : 'up'}}"
+                on-click="{{ toggleFilters }}"></core-icon-button>
+            </div>
           </th>
-          <th template 
+          <th template
             repeat="{{ column in children }}"
             title="{{ columntitle }}"
-            class="{{ column.sortable ? 'sortable' : ''}} aha-{{column.name}}-th">
-            <span class="
-               {{ sortedColumn == column.name ? 'sorting ' : 'hide'}} 
-               {{ descending ? 'arrow-down' : 'arrow-up'}}"> 
-            </span>
-            <span 
-              class="column-head" 
-              title="{{sorttitle}}"
-              on-click="{{ handleSort }}">{{ column.label != null ? column.label : column.name | capitalize }}</span>
-            <span 
-              class="{{ column.hint != null ? 'hint' : 'hide' }}" 
-              title="{{ column.hint }}"></span>
+            class="{{ column.sortable ? 'sortable' : ''}}">
+            <div horizontal layout>
+              <core-icon icon="arrow-drop-{{ descending ? 'down' : 'up'}}" hidden?="{{sortedColumn != column.name}}"></core-icon>
+              <span
+                class="column-head" 
+                title="{{sorttitle}}"
+                on-click="{{ handleSort }}">{{ column.label != null ? column.label : column.name | capitalize }}</span>
+              <span
+                class="{{ column.hint != null ? 'hint' : 'hide' }}" 
+                title="{{ column.hint }}"></span>
+            </div>
           </th>
         </tr>
         <tr hidden?="{{ !searchable }}">
@@ -203,16 +109,15 @@
                 </select>
               </template>
               <template if="{{ 'boolean' == column.type }}">
-                <input 
-                  type="checkbox" 
+                <paper-checkbox 
                   on-change="{{ search }}" 
-                  checked="{{searchMap[column.name] != null ? 'checked' : '' }}"/>
+                  checked?="{{searchMap[column.name] != null }}"></paper-checkbox>
               </template>
               <template if="{{ 'choice' != column.type && 'boolean' != column.type }}">
-                <input type="text" 
+                <paper-input
                   on-keyup="{{ search }}" 
-                  placeholder="{{ column.searchplaceholder }}" 
-                  value="{{searchMap[column.name]}}"/>
+                  label="{{ column.searchplaceholder }}" 
+                  value="{{searchMap[column.name]}}"></paper-input>
               </template>
           </th>
         </tr>
@@ -220,27 +125,23 @@
       <tbody>
         <tr template
           repeat="{{ row in viewingRows }}"
-          class="
-             {{ row.modified ? 'modified' : '' }}
-             {{ row.editing  ? 'editing'  : '' }}
-             {{ row.selected ? 'selected'  : '' }}
-           ">
-          <td>
-            <input type="checkbox" 
+          class="{{ row.modified ? 'modified' : '' }} {{ row.selected ? 'selected'  : '' }}">
+          <td layout horizontal>
+            <paper-checkbox 
               title="{{ selecttitle }}"
               class="{{ selectable ? '' : 'hide'}}" 
               on-change="{{ select }}" 
-              checked="{{ row.selected }}"/>
-            <a class="copy-er {{ copyable ? '' : 'hide' }}" 
+              checked="{{ row.selected }}"></paper-checkbox>
+            <core-icon-button
+              icon="content-copy"
+              hidden?="{{!copyable}}"
               on-click="{{copyRow}}" 
-              title="{{ copytitle }}">
-              <i></i>
-            </a>
-            <a class="remove-er {{ removable ? '' : 'hide' }}" 
+              title="{{ copytitle }}"></core-icon-button>
+            <core-icon-button
+              icon="delete"
+              hidden?="{{!removable}}"
               on-click="{{removeRow}}" 
-              title="{{ removetitle }}">
-              <i></i>
-            </a>
+              title="{{ removetitle }}"></core-icon-button>
           </td>
           <td template
             repeat="{{ column in children }}" 
@@ -248,53 +149,65 @@
             on-click="{{ handleTdClick }}" 
             title="{{ column.editable ? edittitle: '' }}" 
             class="aha-td aha-{{column.name}}-td">
-            <div class="{{ column.editable && row.editing ? '' : 'hide'}}">
-              <select 
-                required?="{{ column.required }}"
-                class="{{ 'choice' == column.type ? '' : 'hide'}}"
-                on-change="{{ save }}" 
-                on-blur="{{ save }}">
-                <option template
-                  repeat="{{ option in column.options }}"
-                  value="{{ option }}" 
-                  selected?="{{ row.value[column.name] == option }}">
-                  {{ option }}
-                </option>
-              </select>
-              <input type="text" 
-                required?="{{ column.required }}"
-                class="{{ 'string' == column.type ? '' : 'hide'}}"
-                on-blur="{{ save }}" 
-                value="{{ row.value[column.name] }}"/>
-              <input type="date" 
-                required?="{{ column.required }}"
-                class="{{ 'date' == column.type ? '' : 'hide'}}"
-                on-blur="{{ save }}" 
-                value="{{ row.value[column.name] }}"/>
-              <input type="time" 
-                required?="{{ column.required }}"
-                class="{{ 'time' == column.type ? '' : 'hide'}}"
-                on-blur="{{ save }}" 
-                value="{{ row.value[column.name] }}"/>
-              <input type="datetime" 
-                required?="{{ column.required }}"
-                class="{{ 'datetime' == column.type ? '' : 'hide'}}"
-                on-blur="{{ save }}" 
-                value="{{ row.value[column.name] }}"/>
-              <textarea
-                required?="{{ column.required }}"
-                class="{{ 'text' == column.type ? '' : 'hide'}}"
-                on-mouseover="{{ focus }}"
-                on-blur="{{ save }}">{{ row.value[column.name] }}</textarea>
-              <input type="checkbox"
-                class="{{ 'boolean' == column.type ? '' : 'hide'}}"
-                on-change="{{ save }}" 
-                checked?="{{ row.value[column.name] }}" />
-            </div>
-            <div class="{{ column.editable && row.editing ? 'hide' : ''}} {{ row.value[column.name] == null ? 'empty' : ''}}">
-<!--               {{ translate2(row.value[column.name], column.options, column.placeholder) }} -->
-              {{ row.value[column.name] }}
-            </div>
+            <template if="{{ column.editable && row.editing }}">
+                <template if="{{ 'choice' == column.type }}">
+                  <select 
+                    required?="{{ column.required }}"
+                    on-change="{{ save }}" 
+                    on-blur="{{ save }}">
+                    <option template
+                      repeat="{{ option in column.options }}"
+                      value="{{ option }}" 
+                      selected?="{{ row.value[column.name] == option }}">
+                      {{ option }}
+                    </option>
+                  </select>
+                </template>
+                <template if="{{ 'string' == column.type }}">
+                  <input type="text" 
+                    required?="{{ column.required }}"
+                    class="{{ 'string' == column.type ? '' : 'hide'}}"
+                    on-blur="{{ save }}" 
+                    value="{{ row.value[column.name] }}"/>
+                </template>
+                <template if="{{ 'date' == column.type }}">
+                  <input type="date" 
+                    required?="{{ column.required }}"
+                    class="{{ 'date' == column.type ? '' : 'hide'}}"
+                    on-blur="{{ save }}" 
+                    value="{{ row.value[column.name] }}"/>
+                </template>
+                <template if="{{ 'time' == column.type }}">
+                  <input type="time" 
+                    required?="{{ column.required }}"
+                    class="{{ 'time' == column.type ? '' : 'hide'}}"
+                    on-blur="{{ save }}" 
+                    value="{{ row.value[column.name] }}"/>
+                </template>
+                <template if="{{ 'datetime' == column.type }}">
+                  <input type="datetime" 
+                    required?="{{ column.required }}"
+                    class="{{ 'datetime' == column.type ? '' : 'hide'}}"
+                    on-blur="{{ save }}" 
+                    value="{{ row.value[column.name] }}"/>
+                </template>
+                <template if="{{ 'text' == column.type }}">
+                  <textarea
+                    required?="{{ column.required }}"
+                    class="{{ 'text' == column.type ? '' : 'hide'}}"
+                    on-mouseover="{{ focus }}"
+                    on-blur="{{ save }}">{{ row.value[column.name] }}</textarea>
+                </template>
+                <template if="{{ 'boolean' == column.type }}">
+                  <paper-checkbox
+                    on-change="{{ save }}" 
+                    checked?="{{ row.value[column.name] }}" ></paper-checkbox>
+                </template>
+            </template>
+            <template if="{{ !column.editable || !row.editing }}">
+  <!--               {{ translate2(row.value[column.name], column.options, column.placeholder) }} -->
+                {{ row.value[column.name] }}
+            </template>
           </td>
         </tr>
       </tbody>
@@ -303,28 +216,32 @@
           <td colspan="{{children.length+1}}">
             <div class="pagination">
               <span class="paging">
-                <button
+                <core-icon-button
                   title="{{firsttitle}}"
                   disabled?="{{currentpage == 1}}"
-                  on-click="{{firstPage}}">{{first}}</button>
-                <button
+                  on-click="{{firstPage}}"
+                  icon="av:skip-previous"></core-icon-button>
+                <core-icon-button
                   title="{{previoustitle}}"
                   disabled?="{{currentpage == 1}}"
-                  on-click="{{prevPage}}">{{previous}}</button>
+                  on-click="{{prevPage}}"
+                  icon="av:fast-rewind"></core-icon-button>
                 <span class="pager">
                   {{pagetext != null ? pagetext : ''}}
-                  <input type="text" value="{{currentpage | asInt}}"/>
+                  <paper-input value="{{currentpage | asInt}}"></paper-input>
                   {{pageoftext != null ? pageoftext : '/'}}
                   {{pageCount}}
                 </span>
-                <button
+                <core-icon-button
                   title="{{nexttitle}}"
                   disabled?="{{pageCount <= 0 || currentpage == pageCount}}"
-                  on-click="{{nextPage}}">{{next}}</button>
-                <button
+                  on-click="{{nextPage}}"
+                  icon="av:fast-forward"></core-icon-button>
+                <core-icon-button
                   title="{{lasttitle}}"
                   disabled?="{{pageCount <= 0 || currentpage == pageCount}}"
-                  on-click="{{lastPage}}">{{last}}</button>
+                  on-click="{{lastPage}}"
+                  icon="av:skip-next"></core-icon-button>
               </span>
               <span class="pagesize">
                 {{ pagesizetext != null ? pagesizetext : '' }}

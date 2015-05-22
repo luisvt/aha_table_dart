@@ -253,10 +253,10 @@ class AhaTable extends PolymerElement {
 
   save(e) {
     AhaRow row = nodeBind(e.target).templateInstance.model['row'];
-    var column = nodeBind(e.target).templateInstance.model['column'];
+    AhaColumn column = nodeBind(e.target).templateInstance.model['column'];
     if (row != null) {
-      if ("CHECKBOX" == e.target.type.toUpperCase()) {
-        row.value[column.name] = e.target.selected;
+      if ("BOOLEAN" == column.type.toUpperCase()) {
+        row.value[column.name] = e.target.checked;
       } else {
         row.value[column.name] = e.target.value;
       }
@@ -267,7 +267,7 @@ class AhaTable extends PolymerElement {
 
       row.editing = false;
 
-      if (column.required != null && !e.target.validity.valid) {
+      if (column.required != null /*&& !e.target.validity.valid*/) {
         fire('after-invalid', detail: {"event": e, "row" : row, "column" : column});
       }
     }
@@ -294,7 +294,7 @@ class AhaTable extends PolymerElement {
   search(event, details, target) {
     AhaColumn column = nodeBind(target).templateInstance.model['column'];
 
-    searchMap[column.name] = "CHECKBOX" == target.type.toUpperCase() ? target.checked : target.value;
+    searchMap[column.name] = "BOOLEAN" == column.type.toUpperCase() ? target.checked : target.value;
 
     refreshPagination();
   }
